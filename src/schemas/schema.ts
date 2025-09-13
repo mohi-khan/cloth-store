@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   int,
@@ -15,36 +15,51 @@ import {
 // Roles & Permissions (basic auth, if still needed)
 // ========================
 
+export const userModel = mysqlTable("users", {
+  userId: int("user_id").primaryKey().autoincrement(),
+  username: varchar("username", { length: 50 }).notNull().unique(),
+  password: varchar("PASSWORD", { length: 255 }).notNull(),
+  active: boolean("active").notNull().default(true),
+  roleId: int("role_id").references(() => roleModel.roleId, {
+    onDelete: "set null",
+  }),
+  isPasswordResetRequired: boolean("is_password_reset_required").default(true),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at")
+    .default(sql`CURRENT_TIMESTAMP`)
+    .onUpdateNow(),
+});
+
+export const userRelations = relations(userModel, ({ one, many }) => ({
+  role: one(roleModel, {
+    fields: [userModel.roleId],
+    references: [roleModel.roleId],
+  }),
+  // userCompanies: many(userCompanyModel),
+}));
 export const roleModel = mysqlTable("roles", {
   roleId: int("role_id").primaryKey(),
   roleName: varchar("role_name", { length: 50 }).notNull(),
-})
+});
 
 export const permissionsModel = mysqlTable("permissions", {
   id: int("id").primaryKey(),
   name: varchar("name", { length: 50 }).notNull().unique(),
-})
-
-export const userModel = mysqlTable("users", {
-  userId: int("user_id").primaryKey().autoincrement(),
-  username: varchar("username", { length: 50 }).notNull().unique(),
-  password: varchar("password", { length: 255 }).notNull(),
-  active: boolean("active").notNull().default(true),
-  roleId: int("role_id").references(() => roleModel.roleId, { onDelete: "set null" }),
-  isPasswordResetRequired: boolean("is_password_reset_required").default(true),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).onUpdateNow(),
-})
-
+});
 export const rolePermissionsModel = mysqlTable("role_permissions", {
   roleId: int("role_id").references(() => roleModel.roleId),
-  permissionId: int("permission_id").notNull().references(() => permissionsModel.id),
-})
-
+  permissionId: int("permission_id")
+    .notNull()
+    .references(() => permissionsModel.id),
+});
 export const userRolesModel = mysqlTable("user_roles", {
-  userId: int("user_id").notNull().references(() => userModel.userId),
-  roleId: int("role_id").notNull().references(() => roleModel.roleId),
-})
+  userId: int("user_id")
+    .notNull()
+    .references(() => userModel.userId),
+  roleId: int("role_id")
+    .notNull()
+    .references(() => roleModel.roleId),
+});
 
 // ========================
 // Business Domain Tables

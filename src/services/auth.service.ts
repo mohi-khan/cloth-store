@@ -8,7 +8,7 @@ import {
   hashPassword,
   validatePassword,
 } from "./utils/password.utils";
-import { NewUser, userCompanyModel, userModel } from "../schemas";
+import { NewUser, userModel } from "../schemas";
 
 
 
@@ -37,11 +37,11 @@ export const getUserDetailsByUserId = async (userId: number) => {
             },
           },
              
-      userCompanies: {
-        with: {
-          company: true,
-        },
-      },
+      // userCompanies: {
+      //   with: {
+      //     company: true,
+      //   },
+      // },
     },
   });
 
@@ -72,15 +72,15 @@ export const createUser = async (userData: NewUser,companyIds:number[]) => {
     
       })
       .$returningId();
- // Insert user-company relationships
- if (companyIds.length > 0) {
-  await db.insert(userCompanyModel).values(
-    companyIds.map(companyId => ({
-      userId: newUserId.userId,
-      companyId,
-    }))
-  );
-}
+//  // Insert user-company relationships
+//  if (companyIds.length > 0) {
+//   await db.insert(userCompanyModel).values(
+//     companyIds.map(companyId => ({
+//       userId: newUserId.userId,
+//       companyId,
+//     }))
+//   );
+// }
 
     return {
       id: newUserId,
@@ -160,7 +160,7 @@ export const loginUser = async (username: string, password: string) => {
   // fetch user details from db like role, voucher types, company, location, etc.
   const userDetails = await getUserDetailsByUserId(user.userId);
   
-  const permissions = userDetails?.role?.rolePermissions.map((ur) =>
+  const permissions = userDetails?.role?.rolePermissions?.map((ur) =>
     ur.permission.name 
   ) || '';
   
@@ -210,22 +210,22 @@ export const changePassword = async (
     .where(eq(userModel.userId, userId));
 };
 
-export const createUserCompany = async (userId: number, companyId: number) => {
-  try {
-    const [newUserCompany] = await db
-      .insert(userCompanyModel)
-      .values({
-        userId: userId,
-        companyId: companyId,
-      })
-      .onDuplicateKeyUpdate({ set: { userId: userId, companyId: companyId } });
+// export const createUserCompany = async (userId: number, companyId: number) => {
+//   try {
+//     const [newUserCompany] = await db
+//       .insert(userCompanyModel)
+//       .values({
+//         userId: userId,
+//         companyId: companyId,
+//       })
+//       .onDuplicateKeyUpdate({ set: { userId: userId, companyId: companyId } });
 
-    return {
-      userId: userId,
-      companyId: companyId,
-    };
-  } catch (error) {
-    throw error;
-  }
-};
+//     return {
+//       userId: userId,
+//       companyId: companyId,
+//     };
+//   } catch (error) {
+//     throw error;
+//   }
+// };
 
