@@ -1,6 +1,5 @@
 import { eq, sql } from "drizzle-orm";
 import { db } from "../config/database";
-// import { userModel } from "../schemas/users.schema";
 import { BadRequestError, UnauthorizedError } from "./utils/errors.utils";
 import { generateAccessToken } from "./utils/jwt.utils";
 import {
@@ -9,9 +8,6 @@ import {
   validatePassword,
 } from "./utils/password.utils";
 import { NewUser, userModel } from "../schemas";
-
-
-
 
 export const findUserByUsername = async (username: string) => {
   const [user] = await db
