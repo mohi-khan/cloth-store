@@ -5,12 +5,13 @@ import {
   getAllVendorsController,
   getVendorController,
 } from "../controllers/vendor.controller";
+import { authenticateUser } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/create", createVendorController);
-router.get("/getAll", getAllVendorsController);
-router.get("/getById/:id", getVendorController);
-router.put("/edit/:id", editVendorController);
+router.post("/create", authenticateUser, createVendorController);
+router.get("/getAll", authenticateUser, getAllVendorsController);
+router.get("/getById/:id", authenticateUser, getVendorController);
+router.put("/edit/:id", authenticateUser, editVendorController);
 
 export default router;

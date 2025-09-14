@@ -5,12 +5,13 @@ import {
   getAllClothItemsController,
   getClothItemController,
 } from "../controllers/clothItem.controller";
+import { authenticateUser } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/create", createClothItemController);
-router.get("/getAll", getAllClothItemsController);
-router.get("/getById/:id", getClothItemController);
-router.put("/edit/:id", editClothItemController);
+router.post("/create", authenticateUser, createClothItemController);
+router.get("/getAll", authenticateUser, getAllClothItemsController);
+router.get("/getById/:id", authenticateUser, getClothItemController);
+router.put("/edit/:id", authenticateUser, editClothItemController);
 
 export default router;

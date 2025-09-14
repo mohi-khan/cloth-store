@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm"
 import {
   boolean,
   int,
@@ -9,11 +9,15 @@ import {
   double,
   date,
   mysqlEnum,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/mysql-core"
 
 // ========================
-// Roles & Permissions (basic auth, if still needed)
+// Roles & Permissions
 // ========================
+export const roleModel = mysqlTable("roles", {
+  roleId: int("role_id").primaryKey(),
+  roleName: varchar("role_name", { length: 50 }).notNull(),
+})
 
 export const userModel = mysqlTable("users", {
   userId: int("user_id").primaryKey().autoincrement(),
@@ -28,30 +32,20 @@ export const userModel = mysqlTable("users", {
   updatedAt: timestamp("updated_at")
     .default(sql`CURRENT_TIMESTAMP`)
     .onUpdateNow(),
-});
-
-export const userRelations = relations(userModel, ({ one, many }) => ({
-  role: one(roleModel, {
-    fields: [userModel.roleId],
-    references: [roleModel.roleId],
-  }),
-  // userCompanies: many(userCompanyModel),
-}));
-export const roleModel = mysqlTable("roles", {
-  roleId: int("role_id").primaryKey(),
-  roleName: varchar("role_name", { length: 50 }).notNull(),
-});
+})
 
 export const permissionsModel = mysqlTable("permissions", {
   id: int("id").primaryKey(),
   name: varchar("name", { length: 50 }).notNull().unique(),
-});
+})
+
 export const rolePermissionsModel = mysqlTable("role_permissions", {
   roleId: int("role_id").references(() => roleModel.roleId),
   permissionId: int("permission_id")
     .notNull()
     .references(() => permissionsModel.id),
-});
+})
+
 export const userRolesModel = mysqlTable("user_roles", {
   userId: int("user_id")
     .notNull()
@@ -59,7 +53,7 @@ export const userRolesModel = mysqlTable("user_roles", {
   roleId: int("role_id")
     .notNull()
     .references(() => roleModel.roleId),
-});
+})
 
 // ========================
 // Business Domain Tables
@@ -75,7 +69,7 @@ export const clothItemModel = mysqlTable("cloth_item", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedBy: int("updated_by"),
   updatedAt: timestamp("updated_at").onUpdateNow(),
-});
+})
 
 // Customers
 export const customerModel = mysqlTable("customer", {
@@ -88,7 +82,7 @@ export const customerModel = mysqlTable("customer", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedBy: int("updated_by"),
   updatedAt: timestamp("updated_at").onUpdateNow(),
-});
+})
 
 // Vendors (suppliers)
 export const vendorModel = mysqlTable("vendor", {
@@ -102,7 +96,7 @@ export const vendorModel = mysqlTable("vendor", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedBy: int("updated_by"),
   updatedAt: timestamp("updated_at").onUpdateNow(),
-});
+})
 
 // Bank Accounts
 export const bankAccountModel = mysqlTable("bank_account", {
@@ -114,15 +108,16 @@ export const bankAccountModel = mysqlTable("bank_account", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedBy: int("updated_by"),
   updatedAt: timestamp("updated_at").onUpdateNow(),
-});
+})
 
 // Sales (Master)
 export const salesMasterModel = mysqlTable("sales_master", {
   saleId: int("sale_id").autoincrement().primaryKey(),
   paymentType: mysqlEnum("payment_type", ["cash", "credit", "bank"]).notNull(),
-  bankAccountId: int("bank_account_id").references(() => bankAccountModel.bankAccountId, {
-    onDelete: "set null",
-  }),
+  bankAccountId: int("bank_account_id").references(
+    () => bankAccountModel.bankAccountId,
+    { onDelete: "set null" }
+  ),
   customerId: int("customer_id")
     .notNull()
     .references(() => customerModel.customerId, { onDelete: "cascade" }),
@@ -132,7 +127,7 @@ export const salesMasterModel = mysqlTable("sales_master", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedBy: int("updated_by"),
   updatedAt: timestamp("updated_at").onUpdateNow(),
-});
+})
 
 // Sale Items (Details)
 export const salesDetailsModel = mysqlTable("sale_details", {
@@ -149,7 +144,43 @@ export const salesDetailsModel = mysqlTable("sale_details", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedBy: int("updated_by"),
   updatedAt: timestamp("updated_at").onUpdateNow(),
-});
+})
+
+// Purchases (Master)
+export const purchaseMasterModel = mysqlTable("purchase_master", {
+  purchaseId: int("purchase_id").autoincrement().primaryKey(),
+  vendorId: int("vendor_id")
+    .notNull()
+    .references(() => vendorModel.vendorId, { onDelete: "cascade" }),
+  paymentType: mysqlEnum("payment_type", ["cash", "credit", "bank"]).notNull(),
+  bankAccountId: int("bank_account_id").references(
+    () => bankAccountModel.bankAccountId,
+    { onDelete: "set null" }
+  ),
+  purchaseDate: date("purchase_date").notNull(),
+  totalAmount: double("total_amount").notNull(),
+  createdBy: int("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedBy: int("updated_by"),
+  updatedAt: timestamp("updated_at").onUpdateNow(),
+})
+
+// Purchase Items (Details)
+export const purchaseDetailsModel = mysqlTable("purchase_details", {
+  purchaseItemId: int("purchase_item_id").autoincrement().primaryKey(),
+  purchaseId: int("purchase_id")
+    .notNull()
+    .references(() => purchaseMasterModel.purchaseId, { onDelete: "cascade" }),
+  itemId: int("item_id")
+    .notNull()
+    .references(() => clothItemModel.itemId, { onDelete: "cascade" }),
+  quantity: int("quantity").notNull(),
+  unitPrice: double("unit_price").notNull(),
+  createdBy: int("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedBy: int("updated_by"),
+  updatedAt: timestamp("updated_at").onUpdateNow(),
+})
 
 // Expenses
 export const expenseModel = mysqlTable("expense", {
@@ -157,19 +188,100 @@ export const expenseModel = mysqlTable("expense", {
   vendorId: int("vendor_id").references(() => vendorModel.vendorId, {
     onDelete: "set null",
   }),
-  expenseType: varchar("expense_type", { length: 100 }).notNull(), // transport, rent, etc.
+  expenseType: varchar("expense_type", { length: 100 }).notNull(),
   amount: double("amount").notNull(),
   expenseDate: date("expense_date").notNull(),
   remarks: text("remarks"),
   paymentType: mysqlEnum("payment_type", ["bank", "cash"]).notNull(),
-  bankAccountId: int("bank_account_id").references(() => bankAccountModel.bankAccountId, {
-    onDelete: "set null",
-  }),
+  bankAccountId: int("bank_account_id").references(
+    () => bankAccountModel.bankAccountId,
+    { onDelete: "set null" }
+  ),
   createdBy: int("created_by").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedBy: int("updated_by"),
   updatedAt: timestamp("updated_at").onUpdateNow(),
-});
+})
+
+// ========================
+// Relations
+// ========================
+export const userRelations = relations(userModel, ({ one, many }) => ({
+  role: one(roleModel, {
+    fields: [userModel.roleId],
+    references: [roleModel.roleId],
+  }),
+}))
+
+export const salesMasterRelations = relations(
+  salesMasterModel,
+  ({ one, many }) => ({
+    customer: one(customerModel, {
+      fields: [salesMasterModel.customerId],
+      references: [customerModel.customerId],
+    }),
+    bankAccount: one(bankAccountModel, {
+      fields: [salesMasterModel.bankAccountId],
+      references: [bankAccountModel.bankAccountId],
+    }),
+    details: many(salesDetailsModel),
+  })
+)
+
+export const salesDetailsRelations = relations(
+  salesDetailsModel,
+  ({ one }) => ({
+    sale: one(salesMasterModel, {
+      fields: [salesDetailsModel.saleId],
+      references: [salesMasterModel.saleId],
+    }),
+    item: one(clothItemModel, {
+      fields: [salesDetailsModel.itemId],
+      references: [clothItemModel.itemId],
+    }),
+  })
+)
+
+export const purchaseMasterRelations = relations(
+  purchaseMasterModel,
+  ({ one, many }) => ({
+    vendor: one(vendorModel, {
+      fields: [purchaseMasterModel.vendorId],
+      references: [vendorModel.vendorId],
+    }),
+    bankAccount: one(bankAccountModel, {
+      fields: [purchaseMasterModel.bankAccountId],
+      references: [bankAccountModel.bankAccountId],
+    }),
+    details: many(purchaseDetailsModel),
+  })
+)
+
+export const purchaseDetailsRelations = relations(
+  purchaseDetailsModel,
+  ({ one }) => ({
+    purchase: one(purchaseMasterModel, {
+      fields: [purchaseDetailsModel.purchaseId],
+      references: [purchaseMasterModel.purchaseId],
+    }),
+    item: one(clothItemModel, {
+      fields: [purchaseDetailsModel.itemId],
+      references: [clothItemModel.itemId],
+    }),
+  })
+)
+
+export const expenseRelations = relations(expenseModel, ({ one }) => ({
+  vendor: one(vendorModel, {
+    fields: [expenseModel.vendorId],
+    references: [vendorModel.vendorId],
+  }),
+  bankAccount: one(bankAccountModel, {
+    fields: [expenseModel.bankAccountId],
+    references: [bankAccountModel.bankAccountId],
+  }),
+}))
+
 
 export type User = typeof userModel.$inferSelect;
 export type NewUser = typeof userModel.$inferInsert;
@@ -193,5 +305,9 @@ export type Sale = typeof salesMasterModel.$inferSelect;
 export type NewSale = typeof salesMasterModel.$inferInsert;
 export type SaleItem = typeof salesDetailsModel.$inferSelect;
 export type NewSaleItem = typeof salesDetailsModel.$inferInsert;
+export type Purchase = typeof purchaseMasterModel.$inferSelect;
+export type NewPurchase = typeof purchaseMasterModel.$inferInsert;
+export type PurchaseItem = typeof purchaseDetailsModel.$inferSelect;
+export type NewPurchaseItem = typeof purchaseDetailsModel.$inferInsert;
 export type Expense = typeof expenseModel.$inferSelect;
 export type NewExpense = typeof expenseModel.$inferInsert;
