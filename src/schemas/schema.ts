@@ -130,7 +130,7 @@ export const salesMasterModel = mysqlTable("sales_master", {
 })
 
 // Sale Items (Details)
-export const salesDetailsModel = mysqlTable("sale_details", {
+export const salesDetailsModel = mysqlTable("sales_details", {
   saleItemId: int("sale_item_id").autoincrement().primaryKey(),
   saleId: int("sale_id")
     .notNull()
