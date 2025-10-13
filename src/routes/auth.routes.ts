@@ -1,7 +1,6 @@
 import { Router } from "express";
 import {
   changePasswordController,
-  createUserCompanyController,
   getUsersCompanyLocationVoucher,
   getUsersWithRoles,
   login,
@@ -14,7 +13,6 @@ import { getUserList } from "../controllers/users.controller";
 const router = Router();
 
 router.post("/register", register);
-router.post("/create-user-company", createUserCompanyController);
 router.post("/login", login);
 router.get('/users', authenticateUser, getUserList);
 router.get("/users-by-roles", getUsersWithRoles);

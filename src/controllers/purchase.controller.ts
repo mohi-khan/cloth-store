@@ -1,13 +1,22 @@
-import { Request, Response, NextFunction } from 'express'
+import { NextFunction, Request, Response } from 'express'
+import { createInsertSchema } from 'drizzle-zod'
+import { purchaseModel } from '../schemas'
 import { requirePermission } from '../services/utils/jwt.utils'
 import {
   createPurchase,
   editPurchase,
-  getAllPurchase,
+  getAllPurchases,
   getPurchaseById,
 } from '../services/purchase.service'
 
-// Controllers
+// Schema validation
+const createPurchaseSchema = createInsertSchema(purchaseModel).omit({
+  purchaseId: true,
+  createdAt: true,
+})
+
+const editPurchaseSchema = createPurchaseSchema.partial()
+
 export const createPurchaseController = async (
   req: Request,
   res: Response,
@@ -15,24 +24,28 @@ export const createPurchaseController = async (
 ) => {
   try {
     requirePermission(req, 'create_purchase')
-    const { purchasesMaster, purchasesDetails } = req.body
-    const result = await createPurchase(purchasesMaster, purchasesDetails)
+    const purchaseData = createPurchaseSchema.parse(req.body)
+    const item = await createPurchase(purchaseData)
 
-    res.status(201).json({ status: 'success', data: result })
+    res.status(201).json({
+      status: 'success',
+      data: item,
+    })
   } catch (error) {
     next(error)
   }
 }
 
-export const getAllPurchaseController = async (
+export const getAllPurchasesController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     requirePermission(req, 'view_purchase')
-    const result = await getAllPurchase()
-    res.status(200).json(result)
+    const items = await getAllPurchases()
+
+    res.status(200).json(items)
   } catch (error) {
     next(error)
   }
@@ -45,9 +58,10 @@ export const getPurchaseController = async (
 ) => {
   try {
     requirePermission(req, 'view_purchase')
-    const purchaseId = Number(req.params.id)
-    const result = await getPurchaseById(purchaseId)
-    res.status(200).json(result)
+    const id = Number(req.params.id)
+    const item = await getPurchaseById(id)
+
+    res.status(200).json(item)
   } catch (error) {
     next(error)
   }
@@ -60,11 +74,11 @@ export const editPurchaseController = async (
 ) => {
   try {
     requirePermission(req, 'edit_purchase')
-    const purchaseId = Number(req.params.id)
-    const { purchasesMaster, purchasesDetails } = req.body
-    const result = await editPurchase(purchaseId, purchasesMaster, purchasesDetails)
+    const id = Number(req.params.id)
+    const purchaseData = editPurchaseSchema.parse(req.body)
+    const item = await editPurchase(id, purchaseData)
 
-    res.status(200).json(result)
+    res.status(200).json(item)
   } catch (error) {
     next(error)
   }

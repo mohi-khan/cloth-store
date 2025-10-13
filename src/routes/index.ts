@@ -1,6 +1,6 @@
 import { Router } from "express";
 import authRoutes from "./auth.routes";
-import clothItemRoutes from "./clothItem.routes"
+import clothItemRoutes from "./item.routes"
 import customerRoutes from "./customer.routes"
 import vendorRoutes from "./vendor.routes"
 import bankAccountRoutes from "./bankAccount.routes"

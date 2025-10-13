@@ -1,16 +1,16 @@
 import { NextFunction, Request, Response } from 'express'
 import { createInsertSchema } from 'drizzle-zod'
-import { clothItemModel } from '../schemas'
+import { itemModel } from '../schemas'
 import { requirePermission } from '../services/utils/jwt.utils'
 import {
   createClothItem,
   editClothItem,
   getAllClothItems,
   getClothItemById,
-} from '../services/clothItem.service'
+} from '../services/item.service'
 
 // Schema validation
-const createClothItemSchema = createInsertSchema(clothItemModel).omit({
+const createClothItemSchema = createInsertSchema(itemModel).omit({
   itemId: true,
   createdAt: true,
 })

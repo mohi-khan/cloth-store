@@ -4,7 +4,7 @@ import {
   editClothItemController,
   getAllClothItemsController,
   getClothItemController,
-} from "../controllers/clothItem.controller";
+} from "../controllers/item.controller";
 import { authenticateUser } from "../middlewares/auth.middleware";
 
 const router = Router();
