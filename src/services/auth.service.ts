@@ -22,7 +22,6 @@ export const getUserDetailsByUserId = async (userId: number) => {
    const user = await db.query.userModel.findFirst({
     where: eq(userModel.userId, userId),
     with: {
-      
           role: {
             with: {
               rolePermissions: {
@@ -32,12 +31,6 @@ export const getUserDetailsByUserId = async (userId: number) => {
               },
             },
           },
-             
-      // userCompanies: {
-      //   with: {
-      //     company: true,
-      //   },
-      // },
     },
   });
 
@@ -47,7 +40,7 @@ export const getUserDetailsByUserId = async (userId: number) => {
 
 // Create user function 
 
-export const createUser = async (userData: NewUser,companyIds:number[]) => {
+export const createUser = async (userData: NewUser) => {
   try {
     const existingUser = await findUserByUsername(userData.username);
 
@@ -65,7 +58,6 @@ export const createUser = async (userData: NewUser,companyIds:number[]) => {
         password: hashedPassword,
         active: userData.active,
         roleId: userData.roleId,
-    
       })
       .$returningId();
 //  // Insert user-company relationships
@@ -84,7 +76,6 @@ export const createUser = async (userData: NewUser,companyIds:number[]) => {
       password: userData.password,
       active: userData.active,
       roleId: userData.roleId,
-     
     };
 
 // Insert user-location relationships
@@ -154,11 +145,16 @@ export const loginUser = async (username: string, password: string) => {
   }
 
   // fetch user details from db like role, voucher types, company, location, etc.
-  const userDetails = await getUserDetailsByUserId(user.userId);
+  const userDetails = await getUserDetailsByUserId(user.userId) as {
+    role?: {
+      rolePermissions?: { permission: { name: string } }[]
+    }
+    [key: string]: any
+  };
   
   const permissions = userDetails?.role?.rolePermissions?.map((ur) =>
     ur.permission.name 
-  ) || '';
+  ) || [];
   
   const token = generateAccessToken({
     userId: user.userId,

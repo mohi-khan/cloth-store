@@ -32,19 +32,11 @@ const registerSchema = z
     confirmPassword: z.string(),
     active: z.boolean().default(true),
     roleId: z.number(),
-
-    companyid: z.array(z.number()).min(1, 'At least One company is needed'),
-    employeeId: z.number(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ['confirmPassword'],
   })
-
-const createUserCompanySchema = z.object({
-  userId: z.number().int().positive(),
-  companyId: z.number().int().positive(),
-})
 
 const changePasswordSchema = z
   .object({
@@ -100,12 +92,10 @@ export const register = async (
   next: NextFunction
 ) => {
   try {
-    const { username, password, active, roleId, companyid, employeeId } =
+    const { username, password, active, roleId } =
       registerSchema.parse(req.body)
     const user = await createUser(
       { username, password, active, roleId },
-
-      companyid
     )
 
     res.status(201).json({
