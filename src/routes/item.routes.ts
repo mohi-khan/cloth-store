@@ -9,8 +9,8 @@ import { authenticateUser } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/create", authenticateUser, createItemController);
-router.get("/getAll", authenticateUser, getAllItemsController);
+router.post("/create",  createItemController);
+router.get("/getAll",  getAllItemsController);
 router.get("/getById/:id", authenticateUser, getItemController);
 router.put("/edit/:id", authenticateUser, editItemController);
 

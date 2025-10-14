@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../config/database'
-import { purchaseModel, NewPurchase, storeTransactionModel } from '../schemas'
+import { purchaseModel, NewPurchase, storeTransactionModel, itemModel, vendorModel, bankAccountModel } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 
 // Create
@@ -21,7 +21,7 @@ export const createPurchase = async (
       // 2️⃣ Insert related record into store_transaction table
       await tx.insert(storeTransactionModel).values({
         itemId: purchaseData.itemId,
-        quantity: String(purchaseData.totalQuantity),
+        quantity: String(`+${purchaseData.totalQuantity}`),
         transactionDate: purchaseData.purchaseDate,
         reference: String(newPurchase.purchaseId ?? ''), // store purchase id reference
         referenceType: 'purchase',
@@ -41,7 +41,36 @@ export const createPurchase = async (
 
 // Get All
 export const getAllPurchases = async () => {
-  return await db.select().from(purchaseModel)
+  const purchases = await db
+    .select({
+      purchaseId: purchaseModel.purchaseId,
+      itemId: purchaseModel.itemId,
+      totalQuantity: purchaseModel.totalQuantity,
+      notes: purchaseModel.notes,
+      vendorId: purchaseModel.vendorId,
+      paymentType: purchaseModel.paymentType,
+      bankAccountId: purchaseModel.bankAccountId,
+      purchaseDate: purchaseModel.purchaseDate,
+      totalAmount: purchaseModel.totalAmount,
+      isSorted: purchaseModel.isSorted,
+      createdBy: purchaseModel.createdBy,
+      createdAt: purchaseModel.createdAt,
+      updatedBy: purchaseModel.updatedBy,
+      updatedAt: purchaseModel.updatedAt,
+      // extra fields from joins
+      itemName: itemModel.itemName,
+      vendorName: vendorModel.name,
+      bankName: bankAccountModel.bankName,
+      branch: bankAccountModel.branch,
+      accountNumber: bankAccountModel.accountNumber,
+    })
+    .from(purchaseModel)
+    .innerJoin(itemModel, eq(purchaseModel.itemId, itemModel.itemId))
+    .innerJoin(vendorModel, eq(purchaseModel.vendorId, vendorModel.vendorId))
+    .leftJoin(bankAccountModel, eq(purchaseModel.bankAccountId, bankAccountModel.bankAccountId)) // bankAccount can be null
+    .execute()
+
+  return purchases
 }
 
 // Get By Id
