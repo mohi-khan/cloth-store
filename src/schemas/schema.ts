@@ -151,6 +151,7 @@ export const purchaseModel = mysqlTable('purchase', {
   itemId: int('item_id')
     .notNull()
     .references(() => itemModel.itemId, { onDelete: 'cascade' }),
+
   totalQuantity: int('total_quantity').notNull(),
   notes: text('notes'),
   vendorId: int('vendor_id')
@@ -214,6 +215,7 @@ export const expenseModel = mysqlTable('expense', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
+//store transactions
 export const storeTransactionModel = mysqlTable('store_transaction', {
   transactionId: int('transaction_id').autoincrement().primaryKey(),
   itemId: int('item_id').references(() => itemModel.itemId, {
