@@ -172,7 +172,7 @@ export const purchaseModel = mysqlTable('purchase', {
 
 export const sortingModel = mysqlTable('sorting', {
   sortingId: int('sorting_id').autoincrement().primaryKey(),
-  item_id: int('item_id')
+  itemId: int('item_id')
     .notNull()
     .references(() => itemModel.itemId, { onDelete: 'cascade' }),
   totalQuantity: int('total_quantity').notNull(),
@@ -244,22 +244,27 @@ export const userRelations = relations(userModel, ({ one }) => ({
     fields: [userModel.roleId],
     references: [roleModel.roleId],
   }),
-}));
+}))
 
 export const roleRelations = relations(roleModel, ({ many }) => ({
   rolePermissions: many(rolePermissionsModel),
-}));
+  users: many(userModel),
+}))
 
-export const rolePermissionRelations = relations(rolePermissionsModel, ({ one }) => ({
-  role: one(roleModel, {
-    fields: [rolePermissionsModel.roleId],
-    references: [roleModel.roleId],
-  }),
-  permission: one(permissionsModel, {
-    fields: [rolePermissionsModel.permissionId],
-    references: [permissionsModel.id],
-  }),
-}));
+
+export const rolePermissionsRelations = relations(
+  rolePermissionsModel,
+  ({ one }) => ({
+    role: one(roleModel, {
+      fields: [rolePermissionsModel.roleId],
+      references: [roleModel.roleId],
+    }),
+    permission: one(permissionsModel, {
+      fields: [rolePermissionsModel.permissionId],
+      references: [permissionsModel.id],
+    }),
+  })
+)
 
 export const salesMasterRelations = relations(
   salesMasterModel,
@@ -290,6 +295,25 @@ export const salesDetailsRelations = relations(
   })
 )
 
+export const customerRelations = relations(customerModel, ({ many }) => ({
+  sales: many(salesMasterModel),
+}))
+
+export const bankAccountRelations = relations(bankAccountModel, ({ many }) => ({
+  sales: many(salesMasterModel),
+  purchases: many(purchaseModel),
+  expenses: many(expenseModel),
+  sortings: many(sortingModel),
+}))
+
+export const itemRelations = relations(itemModel, ({ many }) => ({
+  salesDetails: many(salesDetailsModel),
+  purchases: many(purchaseModel),
+  storeTransactions: many(storeTransactionModel),
+  sortings: many(sortingModel),
+}))
+
+
 export const purchaseRelations = relations(purchaseModel, ({ one, many }) => ({
   vendor: one(vendorModel, {
     fields: [purchaseModel.vendorId],
@@ -316,6 +340,13 @@ export const expenseRelations = relations(expenseModel, ({ one }) => ({
   }),
 }))
 
+export const vendorRelations = relations(vendorModel, ({ many }) => ({
+  purchases: many(purchaseModel),
+  expenses: many(expenseModel),
+  sortings: many(sortingModel),
+}))
+
+
 export const storeTransactionRelations = relations(
   storeTransactionModel,
   ({ one }) => ({
@@ -326,18 +357,32 @@ export const storeTransactionRelations = relations(
   })
 )
 
+export const sortingRelations = relations(sortingModel, ({ one }) => ({
+  item: one(itemModel, {
+    fields: [sortingModel.itemId],
+    references: [itemModel.itemId],
+  }),
+  vendor: one(vendorModel, {
+    fields: [sortingModel.vendorId],
+    references: [vendorModel.vendorId],
+  }),
+  bankAccount: one(bankAccountModel, {
+    fields: [sortingModel.bankAccountId],
+    references: [bankAccountModel.bankAccountId],
+  }),
+}))
+
+
 export type User = typeof userModel.$inferSelect
 export type NewUser = typeof userModel.$inferInsert
 export type Role = typeof roleModel.$inferSelect
 export type NewRole = typeof roleModel.$inferInsert
 export type Permission = typeof permissionsModel.$inferSelect
 export type NewPermission = typeof permissionsModel.$inferInsert
-export type RolePermission = typeof rolePermissionsModel.$inferSelect
-export type NewRolePermission = typeof rolePermissionsModel.$inferInsert
 export type UserRole = typeof userRolesModel.$inferSelect
 export type NewUserRole = typeof userRolesModel.$inferInsert
-export type ClothItem = typeof itemModel.$inferSelect
-export type NewClothItem = typeof itemModel.$inferInsert
+export type Item = typeof itemModel.$inferSelect
+export type NewItem = typeof itemModel.$inferInsert
 export type Customer = typeof customerModel.$inferSelect
 export type NewCustomer = typeof customerModel.$inferInsert
 export type Vendor = typeof vendorModel.$inferSelect

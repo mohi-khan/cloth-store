@@ -3,29 +3,29 @@ import { createInsertSchema } from 'drizzle-zod'
 import { itemModel } from '../schemas'
 import { requirePermission } from '../services/utils/jwt.utils'
 import {
-  createClothItem,
-  editClothItem,
-  getAllClothItems,
-  getClothItemById,
+  createItem,
+  editItem,
+  getAllItems,
+  getItemById,
 } from '../services/item.service'
 
 // Schema validation
-const createClothItemSchema = createInsertSchema(itemModel).omit({
+const createItemSchema = createInsertSchema(itemModel).omit({
   itemId: true,
   createdAt: true,
 })
 
-const editClothItemSchema = createClothItemSchema.partial()
+const editItemSchema = createItemSchema.partial()
 
-export const createClothItemController = async (
+export const createItemController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'create_cloth_item')
-    const clothItemData = createClothItemSchema.parse(req.body)
-    const item = await createClothItem(clothItemData)
+    requirePermission(req, 'create_item')
+    const itemData = createItemSchema.parse(req.body)
+    const item = await createItem(itemData)
 
     res.status(201).json({
       status: 'success',
@@ -36,14 +36,14 @@ export const createClothItemController = async (
   }
 }
 
-export const getAllClothItemsController = async (
+export const getAllItemsController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'view_cloth_item')
-    const items = await getAllClothItems()
+    requirePermission(req, 'view_item')
+    const items = await getAllItems()
 
     res.status(200).json(items)
   } catch (error) {
@@ -51,15 +51,15 @@ export const getAllClothItemsController = async (
   }
 }
 
-export const getClothItemController = async (
+export const getItemController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'view_cloth_item')
+    requirePermission(req, 'view_item')
     const id = Number(req.params.id)
-    const item = await getClothItemById(id)
+    const item = await getItemById(id)
 
     res.status(200).json(item)
   } catch (error) {
@@ -67,16 +67,16 @@ export const getClothItemController = async (
   }
 }
 
-export const editClothItemController = async (
+export const editItemController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'edit_cloth_item')
+    requirePermission(req, 'edit_item')
     const id = Number(req.params.id)
-    const clothItemData = editClothItemSchema.parse(req.body)
-    const item = await editClothItem(id, clothItemData)
+    const itemData = editItemSchema.parse(req.body)
+    const item = await editItem(id, itemData)
 
     res.status(200).json(item)
   } catch (error) {

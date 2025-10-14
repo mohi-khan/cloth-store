@@ -1,15 +1,15 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../config/database'
-import { itemModel, NewClothItem } from '../schemas'
+import { itemModel, NewItem } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 
 // Create
-export const createClothItem = async (
-  clothItemData: Omit<NewClothItem, 'itemId' | 'updatedAt' | 'updatedBy'>
+export const createItem = async (
+  itemData: Omit<NewItem, 'itemId' | 'updatedAt' | 'updatedBy'>
 ) => {
   try {
     const [newItem] = await db.insert(itemModel).values({
-      ...clothItemData,
+      ...itemData,
       createdAt: new Date(),
     })
 
@@ -20,12 +20,12 @@ export const createClothItem = async (
 }
 
 // Get All
-export const getAllClothItems = async () => {
+export const getAllItems = async () => {
   return await db.select().from(itemModel)
 }
 
 // Get By Id
-export const getClothItemById = async (itemId: number) => {
+export const getItemById = async (itemId: number) => {
   const item = await db
     .select()
     .from(itemModel)
@@ -40,13 +40,13 @@ export const getClothItemById = async (itemId: number) => {
 }
 
 // Update
-export const editClothItem = async (
+export const editItem = async (
   itemId: number,
-  clothItemData: Partial<NewClothItem>
+  itemData: Partial<NewItem>
 ) => {
   const [updatedItem] = await db
     .update(itemModel)
-    .set(clothItemData)
+    .set(itemData)
     .where(eq(itemModel.itemId, itemId))
 
   if (!updatedItem) {

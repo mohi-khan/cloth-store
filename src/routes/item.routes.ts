@@ -1,17 +1,17 @@
 import { Router } from "express";
 import {
-  createClothItemController,
-  editClothItemController,
-  getAllClothItemsController,
-  getClothItemController,
+  createItemController,
+  editItemController,
+  getAllItemsController,
+  getItemController,
 } from "../controllers/item.controller";
 import { authenticateUser } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/create", authenticateUser, createClothItemController);
-router.get("/getAll", authenticateUser, getAllClothItemsController);
-router.get("/getById/:id", authenticateUser, getClothItemController);
-router.put("/edit/:id", authenticateUser, editClothItemController);
+router.post("/create", authenticateUser, createItemController);
+router.get("/getAll", authenticateUser, getAllItemsController);
+router.get("/getById/:id", authenticateUser, getItemController);
+router.put("/edit/:id", authenticateUser, editItemController);
 
 export default router;
