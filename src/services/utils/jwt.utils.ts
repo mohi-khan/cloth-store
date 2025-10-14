@@ -121,7 +121,7 @@ export async function getUserPermissions(userId: number) {
       },
     });
   const permissions = new Set<string>();
-  console.log(result)
+  console.log('dfdfdfdfdfdf',result)
   for (const ur of result) {
     for (const perm of ur.role?.rolePermissions) {
       permissions.add(perm.permission.name);

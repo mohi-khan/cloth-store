@@ -146,11 +146,12 @@ export const salesDetailsModel = mysqlTable('sales_details', {
 })
 
 // Purchases (Master)
-export const purchaseModel = mysqlTable('purchase_master', {
+export const purchaseModel = mysqlTable('purchase', {
   purchaseId: int('purchase_id').autoincrement().primaryKey(),
-  item_id: int('item_id')
+  itemId: int('item_id')
     .notNull()
     .references(() => itemModel.itemId, { onDelete: 'cascade' }),
+
   totalQuantity: int('total_quantity').notNull(),
   notes: text('notes'),
   vendorId: int('vendor_id')
@@ -172,7 +173,7 @@ export const purchaseModel = mysqlTable('purchase_master', {
 
 export const sortingModel = mysqlTable('sorting', {
   sortingId: int('sorting_id').autoincrement().primaryKey(),
-  item_id: int('item_id')
+  itemId: int('item_id')
     .notNull()
     .references(() => itemModel.itemId, { onDelete: 'cascade' }),
   totalQuantity: int('total_quantity').notNull(),
@@ -214,6 +215,7 @@ export const expenseModel = mysqlTable('expense', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
+//store transactions
 export const storeTransactionModel = mysqlTable('store_transaction', {
   transactionId: int('transaction_id').autoincrement().primaryKey(),
   itemId: int('item_id').references(() => itemModel.itemId, {
@@ -239,12 +241,32 @@ export const storeTransactionModel = mysqlTable('store_transaction', {
 // ========================
 // Relations
 // ========================
-export const userRelations = relations(userModel, ({ one, many }) => ({
+export const userRelations = relations(userModel, ({ one }) => ({
   role: one(roleModel, {
     fields: [userModel.roleId],
     references: [roleModel.roleId],
   }),
 }))
+
+export const roleRelations = relations(roleModel, ({ many }) => ({
+  rolePermissions: many(rolePermissionsModel),
+  users: many(userModel),
+}))
+
+
+export const rolePermissionsRelations = relations(
+  rolePermissionsModel,
+  ({ one }) => ({
+    role: one(roleModel, {
+      fields: [rolePermissionsModel.roleId],
+      references: [roleModel.roleId],
+    }),
+    permission: one(permissionsModel, {
+      fields: [rolePermissionsModel.permissionId],
+      references: [permissionsModel.id],
+    }),
+  })
+)
 
 export const salesMasterRelations = relations(
   salesMasterModel,
@@ -275,23 +297,39 @@ export const salesDetailsRelations = relations(
   })
 )
 
-export const purchaseMasterRelations = relations(
-  purchaseModel,
-  ({ one, many }) => ({
-    vendor: one(vendorModel, {
-      fields: [purchaseModel.vendorId],
-      references: [vendorModel.vendorId],
-    }),
-    item: one(itemModel, {
-      fields: [purchaseModel.item_id],
-      references: [itemModel.itemId],
-    }),
-    bankAccount: one(bankAccountModel, {
-      fields: [purchaseModel.bankAccountId],
-      references: [bankAccountModel.bankAccountId],
-    }),
-  })
-)
+export const customerRelations = relations(customerModel, ({ many }) => ({
+  sales: many(salesMasterModel),
+}))
+
+export const bankAccountRelations = relations(bankAccountModel, ({ many }) => ({
+  sales: many(salesMasterModel),
+  purchases: many(purchaseModel),
+  expenses: many(expenseModel),
+  sortings: many(sortingModel),
+}))
+
+export const itemRelations = relations(itemModel, ({ many }) => ({
+  salesDetails: many(salesDetailsModel),
+  purchases: many(purchaseModel),
+  storeTransactions: many(storeTransactionModel),
+  sortings: many(sortingModel),
+}))
+
+
+export const purchaseRelations = relations(purchaseModel, ({ one, many }) => ({
+  vendor: one(vendorModel, {
+    fields: [purchaseModel.vendorId],
+    references: [vendorModel.vendorId],
+  }),
+  item: one(itemModel, {
+    fields: [purchaseModel.itemId],
+    references: [itemModel.itemId],
+  }),
+  bankAccount: one(bankAccountModel, {
+    fields: [purchaseModel.bankAccountId],
+    references: [bankAccountModel.bankAccountId],
+  }),
+}))
 
 export const expenseRelations = relations(expenseModel, ({ one }) => ({
   vendor: one(vendorModel, {
@@ -304,6 +342,13 @@ export const expenseRelations = relations(expenseModel, ({ one }) => ({
   }),
 }))
 
+export const vendorRelations = relations(vendorModel, ({ many }) => ({
+  purchases: many(purchaseModel),
+  expenses: many(expenseModel),
+  sortings: many(sortingModel),
+}))
+
+
 export const storeTransactionRelations = relations(
   storeTransactionModel,
   ({ one }) => ({
@@ -314,18 +359,32 @@ export const storeTransactionRelations = relations(
   })
 )
 
+export const sortingRelations = relations(sortingModel, ({ one }) => ({
+  item: one(itemModel, {
+    fields: [sortingModel.itemId],
+    references: [itemModel.itemId],
+  }),
+  vendor: one(vendorModel, {
+    fields: [sortingModel.vendorId],
+    references: [vendorModel.vendorId],
+  }),
+  bankAccount: one(bankAccountModel, {
+    fields: [sortingModel.bankAccountId],
+    references: [bankAccountModel.bankAccountId],
+  }),
+}))
+
+
 export type User = typeof userModel.$inferSelect
 export type NewUser = typeof userModel.$inferInsert
 export type Role = typeof roleModel.$inferSelect
 export type NewRole = typeof roleModel.$inferInsert
 export type Permission = typeof permissionsModel.$inferSelect
 export type NewPermission = typeof permissionsModel.$inferInsert
-export type RolePermission = typeof rolePermissionsModel.$inferSelect
-export type NewRolePermission = typeof rolePermissionsModel.$inferInsert
 export type UserRole = typeof userRolesModel.$inferSelect
 export type NewUserRole = typeof userRolesModel.$inferInsert
-export type ClothItem = typeof itemModel.$inferSelect
-export type NewClothItem = typeof itemModel.$inferInsert
+export type Item = typeof itemModel.$inferSelect
+export type NewItem = typeof itemModel.$inferInsert
 export type Customer = typeof customerModel.$inferSelect
 export type NewCustomer = typeof customerModel.$inferInsert
 export type Vendor = typeof vendorModel.$inferSelect

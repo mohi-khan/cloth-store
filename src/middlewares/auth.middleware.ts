@@ -29,7 +29,7 @@ export const authenticateUser = async (
     next();
   } catch (error) {
     console.error(error)
-    next(UnauthorizedError("Invalid token"));
+    return next(UnauthorizedError("Invalid token"));
   }
 };
 
