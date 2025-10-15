@@ -133,17 +133,41 @@ export const getSortingById = async (sortingId: number) => {
 
 // Update
 export const editSorting = async (
-  sortingId: number,
-  sortingData: Partial<NewSorting>
+  sortingDataArray: (Partial<typeof sortingModel.$inferInsert> & {
+    sortingId: number
+  })[]
 ) => {
-  const [updatedItem] = await db
-    .update(sortingModel)
-    .set(sortingData)
-    .where(eq(sortingModel.sortingId, sortingId))
-
-  if (!updatedItem) {
-    throw BadRequestError('Sorting not found')
+  if (!Array.isArray(sortingDataArray) || sortingDataArray.length === 0) {
+    throw BadRequestError('No sorting data provided')
   }
 
-  return updatedItem
+  const trx = await db.transaction(async (tx) => {
+    const updatedRecords = []
+
+    for (const sortingData of sortingDataArray) {
+      const { sortingId, ...updateFields } = sortingData
+
+      if (!sortingId) {
+        throw BadRequestError('Each record must include sortingId')
+      }
+
+      const [updatedItem] = await tx
+        .update(sortingModel)
+        .set({
+          ...updateFields,
+          updatedAt: new Date(),
+        })
+        .where(eq(sortingModel.sortingId, sortingId))
+
+      if (!updatedItem) {
+        throw BadRequestError(`Sorting record with ID ${sortingId} not found`)
+      }
+
+      updatedRecords.push(updatedItem)
+    }
+
+    return updatedRecords
+  })
+
+  return trx
 }

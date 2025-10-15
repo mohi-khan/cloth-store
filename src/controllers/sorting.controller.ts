@@ -93,12 +93,19 @@ export const editSortingController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'edit_sorting')
-    const id = Number(req.params.id)
-    const sortingData = editSortingSchema.parse(req.body)
-    const item = await editSorting(id, sortingData)
+    const sortingDataArray = req.body
 
-    res.status(200).json(item)
+    if (!Array.isArray(sortingDataArray)) {
+      throw new Error("Request body must be an array of sorting records")
+    }
+
+    const result = await editSorting(sortingDataArray)
+
+    res.status(200).json({
+      status: "success",
+      message: "Sorting records updated successfully",
+      data: result,
+    })
   } catch (error) {
     next(error)
   }
