@@ -7,6 +7,7 @@ import bankAccountRoutes from "./bankAccount.routes"
 import expenseRoutes from "./expense.routes"
 import salesRoutes from "./sales.routes"
 import purchaseRoutes from "./purchase.routes"
+import sortingRoutes from "./sorting.routes"
 
 const router=Router()
 
@@ -18,5 +19,6 @@ router.use('/bank-account',bankAccountRoutes)
 router.use('/expense', expenseRoutes)
 router.use('/sales', salesRoutes)
 router.use('/purchase', purchaseRoutes)
+router.use('/sorting', sortingRoutes)
 
 export default router;
