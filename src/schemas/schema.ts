@@ -181,7 +181,15 @@ export const sortingModel = mysqlTable('sorting', {
   vendorId: int('vendor_id')
     .notNull()
     .references(() => vendorModel.vendorId, { onDelete: 'cascade' }),
-  paymentType: mysqlEnum('payment_type', ['cash', 'credit', 'bank']).notNull(),
+  purchaseId: int('purchase_id')
+    .notNull()
+    .references(() => purchaseModel.purchaseId, { onDelete: 'cascade' }),
+  paymentType: mysqlEnum('payment_type', [
+    'cash',
+    'credit',
+    'bank',
+    'mfs',
+  ]).notNull(),
   bankAccountId: int('bank_account_id').references(
     () => bankAccountModel.bankAccountId,
     { onDelete: 'set null' }
@@ -253,7 +261,6 @@ export const roleRelations = relations(roleModel, ({ many }) => ({
   users: many(userModel),
 }))
 
-
 export const rolePermissionsRelations = relations(
   rolePermissionsModel,
   ({ one }) => ({
@@ -315,7 +322,6 @@ export const itemRelations = relations(itemModel, ({ many }) => ({
   sortings: many(sortingModel),
 }))
 
-
 export const purchaseRelations = relations(purchaseModel, ({ one, many }) => ({
   vendor: one(vendorModel, {
     fields: [purchaseModel.vendorId],
@@ -348,7 +354,6 @@ export const vendorRelations = relations(vendorModel, ({ many }) => ({
   sortings: many(sortingModel),
 }))
 
-
 export const storeTransactionRelations = relations(
   storeTransactionModel,
   ({ one }) => ({
@@ -372,8 +377,11 @@ export const sortingRelations = relations(sortingModel, ({ one }) => ({
     fields: [sortingModel.bankAccountId],
     references: [bankAccountModel.bankAccountId],
   }),
+  purchase: one(purchaseModel, {
+    fields: [sortingModel.purchaseId],
+    references: [purchaseModel.purchaseId],
+  }),
 }))
-
 
 export type User = typeof userModel.$inferSelect
 export type NewUser = typeof userModel.$inferInsert
@@ -399,5 +407,7 @@ export type Purchase = typeof purchaseModel.$inferSelect
 export type NewPurchase = typeof purchaseModel.$inferInsert
 export type Expense = typeof expenseModel.$inferSelect
 export type NewExpense = typeof expenseModel.$inferInsert
+export type NewSorting = typeof sortingModel.$inferInsert
+export type Sorting = typeof sortingModel.$inferSelect
 export type StoreTransaction = typeof storeTransactionModel.$inferSelect
 export type NewStoreTransaction = typeof storeTransactionModel.$inferInsert
