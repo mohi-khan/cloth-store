@@ -92,11 +92,11 @@ export const getAllSortings = async () => {
       paymentType: sortingModel.paymentType,
       bankAccountId: sortingModel.bankAccountId,
       sortingDate: sortingModel.sortingDate,
-      totalAmount: sortingModel.totalAmount,
       createdBy: sortingModel.createdBy,
       createdAt: sortingModel.createdAt,
       updatedBy: sortingModel.updatedBy,
       updatedAt: sortingModel.updatedAt,
+      purchaseId: sortingModel.purchaseId,
       // extra fields from joins
       itemName: itemModel.itemName,
       vendorName: vendorModel.name,
@@ -134,40 +134,71 @@ export const getSortingById = async (sortingId: number) => {
 // Update
 export const editSorting = async (
   sortingDataArray: (Partial<typeof sortingModel.$inferInsert> & {
-    sortingId: number
+    sortingId?: number
   })[]
 ) => {
   if (!Array.isArray(sortingDataArray) || sortingDataArray.length === 0) {
-    throw BadRequestError('No sorting data provided')
+    throw BadRequestError("No sorting data provided")
   }
 
   const trx = await db.transaction(async (tx) => {
-    const updatedRecords = []
+    const processedRecords = []
 
     for (const sortingData of sortingDataArray) {
-      const { sortingId, ...updateFields } = sortingData
+      const { sortingId, ...fields } = sortingData
 
-      if (!sortingId) {
-        throw BadRequestError('Each record must include sortingId')
+      if (sortingId) {
+        // --- Update existing record ---
+        const [updatedItem] = await tx
+          .update(sortingModel)
+          .set({
+            ...fields,
+            updatedAt: new Date(),
+          })
+          .where(eq(sortingModel.sortingId, sortingId))
+          .execute()
+
+        if (!updatedItem) {
+          throw BadRequestError(`Sorting record with ID ${sortingId} not found`)
+        }
+
+        processedRecords.push({ ...updatedItem, action: "updated" })
+      } else {
+        // --- Insert new record ---
+        // Required fields for insert
+        const requiredFields = [
+          "itemId",
+          "totalQuantity",
+          "vendorId",
+          "paymentType",
+          "sortingDate",
+          "createdBy",
+          "purchaseId",
+        ] as const
+
+        for (const field of requiredFields) {
+          if (fields[field] == null) {
+            throw BadRequestError(`Missing required field: ${field}`)
+          }
+        }
+
+        const [newItem] = await tx
+          .insert(sortingModel)
+          .values({
+            ...(fields as typeof sortingModel.$inferInsert),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          } satisfies typeof sortingModel.$inferInsert)
+          .execute()
+
+        processedRecords.push({ ...newItem, action: "created" })
       }
-
-      const [updatedItem] = await tx
-        .update(sortingModel)
-        .set({
-          ...updateFields,
-          updatedAt: new Date(),
-        })
-        .where(eq(sortingModel.sortingId, sortingId))
-
-      if (!updatedItem) {
-        throw BadRequestError(`Sorting record with ID ${sortingId} not found`)
-      }
-
-      updatedRecords.push(updatedItem)
     }
 
-    return updatedRecords
+    return processedRecords
   })
 
   return trx
 }
+
+

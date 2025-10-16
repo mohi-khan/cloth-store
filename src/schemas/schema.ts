@@ -195,7 +195,6 @@ export const sortingModel = mysqlTable('sorting', {
     { onDelete: 'set null' }
   ),
   sortingDate: date('sorting_date').notNull(),
-  totalAmount: double('total_amount').notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
