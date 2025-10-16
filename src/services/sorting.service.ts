@@ -97,6 +97,7 @@ export const getAllSortings = async () => {
       createdAt: sortingModel.createdAt,
       updatedBy: sortingModel.updatedBy,
       updatedAt: sortingModel.updatedAt,
+      purchaseId: sortingModel.purchaseId,
       // extra fields from joins
       itemName: itemModel.itemName,
       vendorName: vendorModel.name,
