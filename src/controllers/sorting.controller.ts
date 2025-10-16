@@ -93,20 +93,21 @@ export const editSortingController = async (
   next: NextFunction
 ) => {
   try {
-    const sortingDataArray = req.body
+    const sortingDataArray = req.body;
 
     if (!Array.isArray(sortingDataArray)) {
-      throw new Error("Request body must be an array of sorting records")
+      throw new Error("Request body must be an array of sorting records");
     }
 
-    const result = await editSorting(sortingDataArray)
+    const result = await editSorting(sortingDataArray);
 
     res.status(200).json({
       status: "success",
-      message: "Sorting records updated successfully",
+      message: "Sorting records updated/created successfully",
       data: result,
-    })
+    });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
+
