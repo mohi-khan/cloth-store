@@ -14,9 +14,9 @@ export const createSaleController = async (
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'create_sale')
-    const { salesMaster, salesDetails } = req.body
-    const result = await createSale(salesMaster, salesDetails)
+    // requirePermission(req, 'create_sale')
+    const { salesData } = req.body
+    const result = await createSale(salesData)
 
     res.status(201).json({ status: 'success', data: result })
   } catch (error) {
@@ -45,8 +45,8 @@ export const getSaleController = async (
 ) => {
   try {
     requirePermission(req, 'view_sale')
-    const saleId = Number(req.params.id)
-    const result = await getSaleById(saleId)
+    const saleMasterId = Number(req.params.id)
+    const result = await getSaleById(saleMasterId)
     res.status(200).json(result)
   } catch (error) {
     next(error)
@@ -60,9 +60,9 @@ export const editSaleController = async (
 ) => {
   try {
     requirePermission(req, 'edit_sale')
-    const saleId = Number(req.params.id)
+    const saleMasterId = Number(req.params.id)
     const { salesMaster, salesDetails } = req.body
-    const result = await editSale(saleId, salesMaster, salesDetails)
+    const result = await editSale(saleMasterId, salesMaster, salesDetails)
 
     res.status(200).json(result)
   } catch (error) {

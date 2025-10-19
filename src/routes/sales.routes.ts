@@ -9,7 +9,7 @@ import { authenticateUser } from "../middlewares/auth.middleware"
 
 const router = Router()
 
-router.post("/create", authenticateUser, createSaleController)
+router.post("/create",  createSaleController)
 router.get("/getAll", authenticateUser, getAllSalesController)
 router.get("/getById/:id", authenticateUser, getSaleController)
 router.patch("/edit/:id", authenticateUser, editSaleController)
