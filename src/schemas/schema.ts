@@ -111,7 +111,7 @@ export const bankAccountModel = mysqlTable('bank_account', {
 
 // Sales (Master)
 export const salesMasterModel = mysqlTable('sales_master', {
-  saleId: int('sale_id').autoincrement().primaryKey(),
+  saleMasterId: int('sale_master_id').autoincrement().primaryKey(),
   paymentType: mysqlEnum('payment_type', ['cash', 'credit', 'bank']).notNull(),
   bankAccountId: int('bank_account_id').references(
     () => bankAccountModel.bankAccountId,
@@ -122,6 +122,9 @@ export const salesMasterModel = mysqlTable('sales_master', {
     .references(() => customerModel.customerId, { onDelete: 'cascade' }),
   saleDate: date('sale_date').notNull(),
   totalAmount: double('total_amount').notNull(),
+  totalQuantity: int('total_quantity').notNull(),
+  notes: text('notes'),
+  discountAmount: double('discount_amount').default(0).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
@@ -130,14 +133,15 @@ export const salesMasterModel = mysqlTable('sales_master', {
 
 // Sale Items (Details)
 export const salesDetailsModel = mysqlTable('sales_details', {
-  saleItemId: int('sale_item_id').autoincrement().primaryKey(),
-  saleId: int('sale_id')
+  saleDetailsId: int('sale_details_id').autoincrement().primaryKey(),
+  saleMasterId: int('sale_master_id')
     .notNull()
-    .references(() => salesMasterModel.saleId, { onDelete: 'cascade' }),
+    .references(() => salesMasterModel.saleMasterId, { onDelete: 'cascade' }),
   itemId: int('item_id')
     .notNull()
     .references(() => itemModel.itemId, { onDelete: 'cascade' }),
   quantity: int('quantity').notNull(),
+  amount: double('amount').notNull(),
   unitPrice: double('unit_price').notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -293,8 +297,8 @@ export const salesDetailsRelations = relations(
   salesDetailsModel,
   ({ one }) => ({
     sale: one(salesMasterModel, {
-      fields: [salesDetailsModel.saleId],
-      references: [salesMasterModel.saleId],
+      fields: [salesDetailsModel.saleMasterId],
+      references: [salesMasterModel.saleMasterId],
     }),
     item: one(itemModel, {
       fields: [salesDetailsModel.itemId],
