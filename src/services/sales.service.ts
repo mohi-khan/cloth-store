@@ -114,8 +114,8 @@ export const getAllSales = async () => {
     .innerJoin(
       customerModel,
       eq(salesMasterModel.customerId, customerModel.customerId)
-    ).
-    innerJoin(
+    )
+    .innerJoin(
       bankAccountModel,
       eq(salesMasterModel.bankAccountId, bankAccountModel.bankAccountId)
     )
@@ -174,34 +174,78 @@ export const getAllSales = async () => {
 export const editSale = async (
   saleMasterId: number,
   masterData: Partial<typeof salesMasterModel.$inferInsert>,
-  detailsData?: Omit<
-    typeof salesDetailsModel.$inferInsert,
-    'saleItemId' | 'saleMasterId'
-  >[]
+  detailsData?: Array<
+    Partial<typeof salesDetailsModel.$inferInsert> & { saleDetailsId?: number }
+  >
 ) => {
   return await db.transaction(async (tx) => {
-    // Update master
+    // ✅ 1️⃣ Update salesMaster only (never insert new)
     await tx
       .update(salesMasterModel)
       .set({ ...masterData, updatedAt: new Date() })
       .where(eq(salesMasterModel.saleMasterId, saleMasterId))
 
-    if (detailsData) {
-      // Clear old details
-      await tx
-        .delete(salesDetailsModel)
+    // ✅ 2️⃣ Handle saleDetails intelligently
+    if (detailsData && detailsData.length > 0) {
+      // Get existing saleDetails IDs for this saleMaster
+      const existingDetails = await tx
+        .select({ saleDetailsId: salesDetailsModel.saleDetailsId })
+        .from(salesDetailsModel)
         .where(eq(salesDetailsModel.saleMasterId, saleMasterId))
 
-      // Insert new details
-      await tx.insert(salesDetailsModel).values(
-        detailsData.map((d) => ({
-          ...d,
-          saleMasterId,
-          createdAt: new Date(),
-        }))
-      )
+      const existingIds = existingDetails.map((d) => d.saleDetailsId)
+
+      // Separate update vs insert lists
+      const toUpdate = detailsData.filter((d) => d.saleDetailsId)
+      const toInsert = detailsData.filter((d) => !d.saleDetailsId)
+
+      // 🧩 Update existing records
+      for (const detail of toUpdate) {
+        await tx
+          .update(salesDetailsModel)
+          .set({
+            itemId: detail.itemId,
+            quantity: detail.quantity,
+            unitPrice: detail.unitPrice,
+            amount: detail.amount,
+            updatedAt: new Date(),
+            updatedBy: masterData.updatedBy,
+          })
+          .where(eq(salesDetailsModel.saleDetailsId, detail.saleDetailsId!))
+      }
+
+      // 🧩 Insert new records
+      if (toInsert.length > 0) {
+        if (!masterData.updatedBy) throw new Error('updatedBy is required')
+        await tx.insert(salesDetailsModel).values(
+          toInsert.map((d) => ({
+            saleMasterId,
+            itemId: d.itemId!,
+            quantity: d.quantity!,
+            unitPrice: d.unitPrice!,
+            amount: d.amount!,
+            createdAt: new Date(),
+            createdBy: masterData.updatedBy!,
+          }))
+        )
+      }
+
+      // 🧩 Delete old details that are not in the request anymore
+      const requestIds = toUpdate
+        .map((d) => d.saleDetailsId)
+        .filter((id): id is number => !!id)
+
+      if (existingIds.length > 0) {
+        const toDelete = existingIds.filter((id) => !requestIds.includes(id))
+        if (toDelete.length > 0) {
+          await tx
+            .delete(salesDetailsModel)
+            .where(inArray(salesDetailsModel.saleDetailsId, toDelete))
+        }
+      }
     }
 
+    // ✅ 3️⃣ Return updated sale with all joined data
     return await getSaleById(saleMasterId)
   })
 }
