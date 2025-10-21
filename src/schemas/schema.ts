@@ -205,17 +205,30 @@ export const sortingModel = mysqlTable('sorting', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
+//account head
+export const accountHeadModel = mysqlTable('account_head', {
+  accountHeadId: int('account_head_id').autoincrement().primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  createdBy: int('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedBy: int('updated_by'),
+  updatedAt: timestamp('updated_at').onUpdateNow(),
+})
+
 // Expenses
 export const expenseModel = mysqlTable('expense', {
   expenseId: int('expense_id').autoincrement().primaryKey(),
+  accountHeadId: int('account_head_id').references(
+    () => accountHeadModel.accountHeadId,
+    { onDelete: 'set null' }
+  ),
   vendorId: int('vendor_id').references(() => vendorModel.vendorId, {
     onDelete: 'set null',
   }),
-  expenseType: varchar('expense_type', { length: 100 }).notNull(),
   amount: double('amount').notNull(),
   expenseDate: date('expense_date').notNull(),
   remarks: text('remarks'),
-  paymentType: mysqlEnum('payment_type', ['bank', 'cash']).notNull(),
+  paymentType: mysqlEnum('payment_type', ['bank', 'cash', 'mfs']).notNull(),
   bankAccountId: int('bank_account_id').references(
     () => bankAccountModel.bankAccountId,
     { onDelete: 'set null' }
@@ -341,9 +354,13 @@ export const purchaseRelations = relations(purchaseModel, ({ one, many }) => ({
 }))
 
 export const expenseRelations = relations(expenseModel, ({ one }) => ({
-  vendor: one(vendorModel, {
-    fields: [expenseModel.vendorId],
-    references: [vendorModel.vendorId],
+  accountHead: one(accountHeadModel, {
+    fields: [expenseModel.accountHeadId],
+    references: [accountHeadModel.accountHeadId],
+  }),
+  vendor: one(accountHeadModel, {
+    fields: [expenseModel.accountHeadId],
+    references: [accountHeadModel.accountHeadId],
   }),
   bankAccount: one(bankAccountModel, {
     fields: [expenseModel.bankAccountId],
@@ -409,6 +426,8 @@ export type NewSaleItem = typeof salesDetailsModel.$inferInsert
 export type Purchase = typeof purchaseModel.$inferSelect
 export type NewPurchase = typeof purchaseModel.$inferInsert
 export type Expense = typeof expenseModel.$inferSelect
+export type AccountHead = typeof accountHeadModel.$inferSelect
+export type NewAccountHead = typeof accountHeadModel.$inferInsert
 export type NewExpense = typeof expenseModel.$inferInsert
 export type NewSorting = typeof sortingModel.$inferInsert
 export type Sorting = typeof sortingModel.$inferSelect

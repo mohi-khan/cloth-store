@@ -92,7 +92,7 @@ export const getSaleById = async (saleMasterId: number) => {
 
 // Get All Sales (with details)
 export const getAllSales = async () => {
-  // 1️⃣ Fetch master records with customer name
+  // Fetch master records
   const masters = await db
     .select({
       saleMasterId: salesMasterModel.saleMasterId,
@@ -115,14 +115,14 @@ export const getAllSales = async () => {
       customerModel,
       eq(salesMasterModel.customerId, customerModel.customerId)
     )
-    .innerJoin(
+    .leftJoin(
+      // ✅ changed from innerJoin
       bankAccountModel,
       eq(salesMasterModel.bankAccountId, bankAccountModel.bankAccountId)
     )
 
   if (masters.length === 0) return []
 
-  // 2️⃣ Fetch all sale details in one query
   const saleIds = masters.map((m) => m.saleMasterId)
 
   const details = await db
@@ -138,33 +138,11 @@ export const getAllSales = async () => {
     .from(salesDetailsModel)
     .where(inArray(salesDetailsModel.saleMasterId, saleIds))
 
-  // 3️⃣ Group details under each master
   const grouped = masters.map((m) => ({
     salesMaster: {
-      saleMasterId: m.saleMasterId,
-      customerId: m.customerId,
-      customerName: m.customerName, // ✅ Added customer name
-      paymentType: m.paymentType,
-      bankAccountId: m.bankAccountId,
-      bankName: m.bankName,
-      branch: m.branch,
-      accountNumber: m.accountNumber,
-      saleDate: m.saleDate,
-      totalAmount: m.totalAmount,
-      totalQuantity: m.totalQuantity,
-      notes: m.notes,
-      discountAmount: m.discountAmount,
-      createdBy: m.createdBy,
+      ...m,
     },
-    saleDetails: details
-      .filter((d) => d.saleMasterId === m.saleMasterId)
-      .map((d) => ({
-        itemId: d.itemId,
-        quantity: d.quantity,
-        unitPrice: d.unitPrice,
-        amount: d.amount,
-        createdBy: d.createdBy,
-      })),
+    saleDetails: details.filter((d) => d.saleMasterId === m.saleMasterId),
   }))
 
   return grouped
@@ -179,15 +157,14 @@ export const editSale = async (
   >
 ) => {
   return await db.transaction(async (tx) => {
-    // ✅ 1️⃣ Update salesMaster only (never insert new)
+    // ✅ 1️⃣ Update master record
     await tx
       .update(salesMasterModel)
       .set({ ...masterData, updatedAt: new Date() })
       .where(eq(salesMasterModel.saleMasterId, saleMasterId))
 
-    // ✅ 2️⃣ Handle saleDetails intelligently
+    // ✅ 2️⃣ Handle sale details (if any)
     if (detailsData && detailsData.length > 0) {
-      // Get existing saleDetails IDs for this saleMaster
       const existingDetails = await tx
         .select({ saleDetailsId: salesDetailsModel.saleDetailsId })
         .from(salesDetailsModel)
@@ -195,11 +172,10 @@ export const editSale = async (
 
       const existingIds = existingDetails.map((d) => d.saleDetailsId)
 
-      // Separate update vs insert lists
       const toUpdate = detailsData.filter((d) => d.saleDetailsId)
       const toInsert = detailsData.filter((d) => !d.saleDetailsId)
 
-      // 🧩 Update existing records
+      // 🔹 Update existing details
       for (const detail of toUpdate) {
         await tx
           .update(salesDetailsModel)
@@ -214,23 +190,23 @@ export const editSale = async (
           .where(eq(salesDetailsModel.saleDetailsId, detail.saleDetailsId!))
       }
 
-      // 🧩 Insert new records
+      // 🔹 Insert new details
       if (toInsert.length > 0) {
-        if (!masterData.updatedBy) throw new Error('updatedBy is required')
         await tx.insert(salesDetailsModel).values(
           toInsert.map((d) => ({
-            saleMasterId,
+            // saleMasterId,
             itemId: d.itemId!,
             quantity: d.quantity!,
             unitPrice: d.unitPrice!,
+            saleMasterId: masterData.saleMasterId!,
             amount: d.amount!,
             createdAt: new Date(),
-            createdBy: masterData.updatedBy!,
+            createdBy: masterData.createdBy!,
           }))
         )
       }
 
-      // 🧩 Delete old details that are not in the request anymore
+      // 🔹 Delete removed details
       const requestIds = toUpdate
         .map((d) => d.saleDetailsId)
         .filter((id): id is number => !!id)
@@ -245,7 +221,7 @@ export const editSale = async (
       }
     }
 
-    // ✅ 3️⃣ Return updated sale with all joined data
+    // ✅ 3️⃣ Return updated sale record
     return await getSaleById(saleMasterId)
   })
 }

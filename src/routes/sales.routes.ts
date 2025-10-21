@@ -12,6 +12,6 @@ const router = Router()
 router.post("/create",  createSaleController)
 router.get("/getAll",  getAllSalesController)
 router.get("/getById/:id", authenticateUser, getSaleController)
-router.patch("/edit/:id",  editSaleController)
+router.patch("/edit",  editSaleController)
 
 export default router
