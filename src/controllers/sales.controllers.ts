@@ -43,6 +43,7 @@ export const createSaleSchema = z.object({
   salesMaster: createSalesMasterSchema,
   saleDetails: z.array(createSalesDetailsSchema),
 })
+
 // Controllers
 export const createSaleController = async (
   req: Request,
@@ -99,11 +100,43 @@ export const editSaleController = async (
 ) => {
   try {
     // requirePermission(req, 'edit_sale')
-    const saleMasterId = Number(req.params.id)
-    const { salesMaster, salesDetails } = req.body
-    const result = await editSale(saleMasterId, salesMaster, salesDetails)
 
-    res.status(200).json(result)
+    const { salesMaster, saleDetails } = req.body
+
+    if (!salesMaster?.saleMasterId) {
+      res.status(400).json({ message: 'saleMasterId is required' })
+    }
+
+    // ✅ Convert master date fields using the same Zod function
+    const formattedMaster = {
+      ...salesMaster,
+      saleDate: dateStringToDate.parse(salesMaster.saleDate),
+      updatedAt: new Date(),
+    }
+
+    // ✅ Convert detail date fields (if any)
+    const formattedDetails = Array.isArray(saleDetails)
+      ? saleDetails.map((d) => ({
+          ...d,
+          createdAt: d.createdAt
+            ? dateStringToDate.parse(d.createdAt)
+            : undefined,
+          updatedAt: d.updatedAt
+            ? dateStringToDate.parse(d.updatedAt)
+            : undefined,
+        }))
+      : []
+
+    const result = await editSale(
+      formattedMaster.saleMasterId,
+      formattedMaster,
+      formattedDetails
+    )
+
+    res.status(200).json({
+      status: 'success',
+      data: result,
+    })
   } catch (error) {
     next(error)
   }
