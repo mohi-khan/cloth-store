@@ -9,8 +9,8 @@ import { authenticateUser } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/create", authenticateUser, createExpenseController);
-router.get("/getAll", authenticateUser, getAllExpensesController);
+router.post("/create",  createExpenseController);
+router.get("/getAll",  getAllExpensesController);
 router.get("/getById/:id", authenticateUser, getExpenseController);
 router.put("/edit/:id", authenticateUser, editExpenseController);
 

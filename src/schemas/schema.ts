@@ -205,7 +205,7 @@ export const sortingModel = mysqlTable('sorting', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
-// Expenses
+//account head
 export const accountHeadModel = mysqlTable('account_head', {
   accountHeadId: int('account_head_id').autoincrement().primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
@@ -215,13 +215,17 @@ export const accountHeadModel = mysqlTable('account_head', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
+// Expenses
 export const expenseModel = mysqlTable('expense', {
   expenseId: int('expense_id').autoincrement().primaryKey(),
-  accountHeadId: int('account_head').notNull(),
+  accountHeadId: int('account_head_id').references(
+    () => accountHeadModel.accountHeadId,
+    { onDelete: 'set null' }
+  ),
   amount: double('amount').notNull(),
   expenseDate: date('expense_date').notNull(),
   remarks: text('remarks'),
-  paymentType: mysqlEnum('payment_type', ['bank', 'cash']).notNull(),
+  paymentType: mysqlEnum('payment_type', ['bank', 'cash', 'mfs']).notNull(),
   bankAccountId: int('bank_account_id').references(
     () => bankAccountModel.bankAccountId,
     { onDelete: 'set null' }

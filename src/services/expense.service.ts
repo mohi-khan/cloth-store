@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../config/database'
-import { expenseModel, NewExpense } from '../schemas'
+import { accountHeadModel, bankAccountModel, expenseModel, NewExpense } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 
 // Create
@@ -12,6 +12,7 @@ export const createExpense = async (
       ...expenseData,
       createdAt: new Date(),
     })
+    console.log("🚀 ~ createExpense ~ expenseData:", expenseData)
 
     return newItem
   } catch (error) {
@@ -21,8 +22,34 @@ export const createExpense = async (
 
 // Get All
 export const getAllExpenses = async () => {
-  return await db.select().from(expenseModel)
-}
+  return await db
+    .select({
+      expenseId: expenseModel.expenseId,
+      accountHeadId: expenseModel.accountHeadId,
+      accountHeadName: accountHeadModel.name,
+      amount: expenseModel.amount,
+      expenseDate: expenseModel.expenseDate,
+      remarks: expenseModel.remarks,
+      paymentType: expenseModel.paymentType,
+      bankAccountId: expenseModel.bankAccountId,
+      bankName: bankAccountModel.bankName,
+      branch: bankAccountModel.branch,
+      accountNumber: bankAccountModel.accountNumber,
+      createdBy: expenseModel.createdBy,
+      createdAt: expenseModel.createdAt,
+      updatedBy: expenseModel.updatedBy,
+      updatedAt: expenseModel.updatedAt,
+    })
+    .from(expenseModel)
+    .innerJoin(
+      accountHeadModel,
+      eq(expenseModel.accountHeadId, accountHeadModel.accountHeadId)
+    )
+    .leftJoin(
+      bankAccountModel,
+      eq(expenseModel.bankAccountId, bankAccountModel.bankAccountId)
+    );
+};
 
 // Get By Id
 export const getExpenseById = async (expenseId: number) => {
