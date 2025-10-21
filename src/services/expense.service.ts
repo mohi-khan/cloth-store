@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../config/database'
-import { accountHeadModel, bankAccountModel, expenseModel, NewExpense } from '../schemas'
+import { accountHeadModel, bankAccountModel, expenseModel, NewExpense, vendorModel } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 
 // Create
@@ -27,6 +27,8 @@ export const getAllExpenses = async () => {
       expenseId: expenseModel.expenseId,
       accountHeadId: expenseModel.accountHeadId,
       accountHeadName: accountHeadModel.name,
+      vendorId: expenseModel.accountHeadId,
+      vendorName: vendorModel.name,
       amount: expenseModel.amount,
       expenseDate: expenseModel.expenseDate,
       remarks: expenseModel.remarks,
@@ -44,6 +46,10 @@ export const getAllExpenses = async () => {
     .innerJoin(
       accountHeadModel,
       eq(expenseModel.accountHeadId, accountHeadModel.accountHeadId)
+    )
+    .leftJoin(
+      vendorModel,
+      eq(expenseModel.vendorId, vendorModel.vendorId)
     )
     .leftJoin(
       bankAccountModel,

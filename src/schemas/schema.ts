@@ -222,6 +222,9 @@ export const expenseModel = mysqlTable('expense', {
     () => accountHeadModel.accountHeadId,
     { onDelete: 'set null' }
   ),
+  vendorId: int('vendor_id').references(() => vendorModel.vendorId, {
+    onDelete: 'set null',
+  }),
   amount: double('amount').notNull(),
   expenseDate: date('expense_date').notNull(),
   remarks: text('remarks'),
@@ -351,6 +354,10 @@ export const purchaseRelations = relations(purchaseModel, ({ one, many }) => ({
 }))
 
 export const expenseRelations = relations(expenseModel, ({ one }) => ({
+  accountHead: one(accountHeadModel, {
+    fields: [expenseModel.accountHeadId],
+    references: [accountHeadModel.accountHeadId],
+  }),
   vendor: one(accountHeadModel, {
     fields: [expenseModel.accountHeadId],
     references: [accountHeadModel.accountHeadId],
