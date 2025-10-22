@@ -9,9 +9,9 @@ import { authenticateUser } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/create", createVendorController);
-router.get("/getAll", getAllVendorsController);
+router.post("/create", authenticateUser, createVendorController);
+router.get("/getAll", authenticateUser, getAllVendorsController);
 router.get("/getById/:id", authenticateUser, getVendorController);
-router.patch("/edit/:id", editVendorController);
+router.patch("/edit/:id", authenticateUser, editVendorController);
 
 export default router;
