@@ -23,7 +23,7 @@ export const createAccountHeadController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_accountHead')
+    // requirePermission(req, 'create_account_head')
     const accountHeadData = createAccountHeadSchema.parse(req.body)
     const accountHead = await createAccountHead(accountHeadData)
 
@@ -42,7 +42,7 @@ export const getAllAccountHeadsController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_accountHead')
+    // requirePermission(req, 'view_account_head')
     const accountHeads = await getAllAccountHeads()
 
     res.status(200).json(accountHeads)
@@ -57,7 +57,7 @@ export const getAccountHeadController = async (
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'view_accountHead')
+    requirePermission(req, 'view_account_head')
     const id = Number(req.params.id)
     const accountHead = await getAccountHeadById(id)
 
@@ -73,7 +73,7 @@ export const editAccountHeadController = async (
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'edit_accountHead')
+    requirePermission(req, 'edit_account_head')
     const id = Number(req.params.id)
     const accountHeadData = editAccountHeadSchema.parse(req.body)
     const accountHead = await editAccountHead(id, accountHeadData)

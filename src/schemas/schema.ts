@@ -64,6 +64,7 @@ export const itemModel = mysqlTable('item', {
   itemId: int('item_id').autoincrement().primaryKey(),
   itemName: varchar('item_name', { length: 100 }).notNull(),
   sellPriece: double('sell_price').notNull(),
+  isBulk: boolean('is_bulk').default(false).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
@@ -77,6 +78,7 @@ export const customerModel = mysqlTable('customer', {
   phone: varchar('phone', { length: 20 }),
   email: varchar('email', { length: 100 }),
   address: varchar('address', { length: 255 }),
+  balance: double('balance').notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
@@ -103,6 +105,8 @@ export const bankAccountModel = mysqlTable('bank_account', {
   bankName: varchar('bank_name', { length: 100 }).notNull(),
   accountNumber: varchar('account_number', { length: 50 }).notNull(),
   branch: varchar('branch', { length: 100 }),
+  balance: double('balance').notNull(),
+  accountName: varchar('account_name', { length: 100 }).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
@@ -262,6 +266,28 @@ export const storeTransactionModel = mysqlTable('store_transaction', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
+export const saleTransactionModel = mysqlTable('sales_transaction', {
+  transactionId: int('transaction_id').autoincrement().primaryKey(),
+  itemId: int('item_id').references(() => itemModel.itemId, {
+    onDelete: 'set null',
+  }),
+  quantity: varchar('quantity', { length: 100 }).notNull(),
+  transactionDate: date('transaction_date').notNull(),
+  reference: varchar('reference', { length: 255 }),
+  referenceType: mysqlEnum('reference_type', [
+    'purchase',
+    'sorting',
+    'sales',
+    'sales return',
+    'purchase return',
+    'wastage',
+  ]).notNull(),
+  createdBy: int('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedBy: int('updated_by'),
+  updatedAt: timestamp('updated_at').onUpdateNow(),
+})
+
 // ========================
 // Relations
 // ========================
@@ -274,7 +300,6 @@ export const userRelations = relations(userModel, ({ one }) => ({
 
 export const roleRelations = relations(roleModel, ({ many }) => ({
   rolePermissions: many(rolePermissionsModel),
-  users: many(userModel),
 }))
 
 export const rolePermissionsRelations = relations(
@@ -290,6 +315,17 @@ export const rolePermissionsRelations = relations(
     }),
   })
 )
+
+export const userRolesRelations = relations(userRolesModel, ({ one }) => ({
+  user: one(userModel, {
+    fields: [userRolesModel.userId],
+    references: [userModel.userId],
+  }),
+  role: one(roleModel, {
+    fields: [userRolesModel.roleId],
+    references: [roleModel.roleId],
+  }),
+}))
 
 export const salesMasterRelations = relations(
   salesMasterModel,

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, gte, lte } from 'drizzle-orm'
 import { db } from '../config/database'
 import {
   sortingModel,
@@ -82,6 +82,15 @@ export const createSorting = async (
 
 // Get All
 export const getAllSortings = async () => {
+  // Get current and previous year
+  const currentYear = new Date().getFullYear()
+  const previousYear = currentYear - 1
+
+  // Define start and end dates (Jan 1 of previous year → Dec 31 of current year)
+  const startDate = new Date(`${previousYear}-01-01T00:00:00.000Z`)
+  const endDate = new Date(`${currentYear}-12-31T23:59:59.999Z`)
+
+  // Fetch only records created within this range
   const sortings = await db
     .select({
       sortingId: sortingModel.sortingId,
@@ -110,7 +119,13 @@ export const getAllSortings = async () => {
     .leftJoin(
       bankAccountModel,
       eq(sortingModel.bankAccountId, bankAccountModel.bankAccountId)
-    ) // bankAccount can be null
+    )
+    .where(
+      and(
+        gte(sortingModel.createdAt, startDate),
+        lte(sortingModel.createdAt, endDate)
+      )
+    )
     .execute()
 
   return sortings
@@ -138,7 +153,7 @@ export const editSorting = async (
   })[]
 ) => {
   if (!Array.isArray(sortingDataArray) || sortingDataArray.length === 0) {
-    throw BadRequestError("No sorting data provided")
+    throw BadRequestError('No sorting data provided')
   }
 
   const trx = await db.transaction(async (tx) => {
@@ -162,18 +177,18 @@ export const editSorting = async (
           throw BadRequestError(`Sorting record with ID ${sortingId} not found`)
         }
 
-        processedRecords.push({ ...updatedItem, action: "updated" })
+        processedRecords.push({ ...updatedItem, action: 'updated' })
       } else {
         // --- Insert new record ---
         // Required fields for insert
         const requiredFields = [
-          "itemId",
-          "totalQuantity",
-          "vendorId",
-          "paymentType",
-          "sortingDate",
-          "createdBy",
-          "purchaseId",
+          'itemId',
+          'totalQuantity',
+          'vendorId',
+          'paymentType',
+          'sortingDate',
+          'createdBy',
+          'purchaseId',
         ] as const
 
         for (const field of requiredFields) {
@@ -191,7 +206,7 @@ export const editSorting = async (
           } satisfies typeof sortingModel.$inferInsert)
           .execute()
 
-        processedRecords.push({ ...newItem, action: "created" })
+        processedRecords.push({ ...newItem, action: 'created' })
       }
     }
 
@@ -200,5 +215,3 @@ export const editSorting = async (
 
   return trx
 }
-
-

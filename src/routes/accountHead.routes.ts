@@ -9,8 +9,8 @@ import { authenticateUser } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/create",  createAccountHeadController);
-router.get("/getAll",  getAllAccountHeadsController);
+router.post("/create", authenticateUser,  createAccountHeadController);
+router.get("/getAll", authenticateUser,  getAllAccountHeadsController);
 router.get("/getById/:id", authenticateUser, getAccountHeadController);
 router.put("/edit/:id", authenticateUser, editAccountHeadController);
 
