@@ -266,6 +266,28 @@ export const storeTransactionModel = mysqlTable('store_transaction', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
+export const saleTransactionModel = mysqlTable('sales_transaction', {
+  transactionId: int('transaction_id').autoincrement().primaryKey(),
+  itemId: int('item_id').references(() => itemModel.itemId, {
+    onDelete: 'set null',
+  }),
+  quantity: varchar('quantity', { length: 100 }).notNull(),
+  transactionDate: date('transaction_date').notNull(),
+  reference: varchar('reference', { length: 255 }),
+  referenceType: mysqlEnum('reference_type', [
+    'purchase',
+    'sorting',
+    'sales',
+    'sales return',
+    'purchase return',
+    'wastage',
+  ]).notNull(),
+  createdBy: int('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedBy: int('updated_by'),
+  updatedAt: timestamp('updated_at').onUpdateNow(),
+})
+
 // ========================
 // Relations
 // ========================

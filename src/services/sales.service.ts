@@ -6,6 +6,7 @@ import {
   storeTransactionModel,
   customerModel,
   bankAccountModel,
+  saleTransactionModel,
 } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 
@@ -53,6 +54,17 @@ export const createSale = async (data: {
         await tx.insert(storeTransactionModel).values({
           itemId: item.itemId,
           quantity: String(`-${item.quantity}`),
+          transactionDate: salesMaster.saleDate,
+          reference: String(saleMasterId),
+          referenceType: 'sales',
+          createdBy: salesMaster.createdBy,
+          createdAt: new Date(),
+        })
+
+        
+        await tx.insert(saleTransactionModel).values({
+          itemId: item.itemId,
+          quantity: String(`+${item.quantity}`),
           transactionDate: salesMaster.saleDate,
           reference: String(saleMasterId),
           referenceType: 'sales',
