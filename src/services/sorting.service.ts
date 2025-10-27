@@ -180,7 +180,6 @@ export const editSorting = async (
         processedRecords.push({ ...updatedItem, action: 'updated' })
       } else {
         // --- Insert new record ---
-        // Required fields for insert
         const requiredFields = [
           'itemId',
           'totalQuantity',
@@ -197,7 +196,8 @@ export const editSorting = async (
           }
         }
 
-        const [newItem] = await tx
+        // Insert new sorting record
+        const [newSorting] = await tx
           .insert(sortingModel)
           .values({
             ...(fields as typeof sortingModel.$inferInsert),
@@ -206,7 +206,18 @@ export const editSorting = async (
           } satisfies typeof sortingModel.$inferInsert)
           .execute()
 
-        processedRecords.push({ ...newItem, action: 'created' })
+        processedRecords.push({ ...newSorting, action: 'created' })
+
+        // Insert corresponding store transaction
+        await tx.insert(storeTransactionModel).values({
+          itemId: fields.itemId!,
+          quantity: `+${fields.totalQuantity}`,
+          transactionDate: fields.sortingDate!,
+          // reference: String(newSorting.sortingId ?? ''),
+          referenceType: 'sorting',
+          createdBy: fields.createdBy!,
+          createdAt: new Date(),
+        } satisfies typeof storeTransactionModel.$inferInsert)
       }
     }
 
@@ -215,3 +226,4 @@ export const editSorting = async (
 
   return trx
 }
+
