@@ -64,6 +64,7 @@ export const itemModel = mysqlTable('item', {
   itemId: int('item_id').autoincrement().primaryKey(),
   itemName: varchar('item_name', { length: 100 }).notNull(),
   sellPriece: double('sell_price').notNull(),
+  isBulk: boolean('is_bulk').default(false).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
