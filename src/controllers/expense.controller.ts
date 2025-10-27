@@ -50,7 +50,7 @@ export const getAllExpensesController = async (
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'view_expense')
+    // requirePermission(req, 'view_expense')
     const items = await getAllExpenses()
 
     res.status(200).json(items)

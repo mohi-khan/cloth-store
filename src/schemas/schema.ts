@@ -103,6 +103,8 @@ export const bankAccountModel = mysqlTable('bank_account', {
   bankName: varchar('bank_name', { length: 100 }).notNull(),
   accountNumber: varchar('account_number', { length: 50 }).notNull(),
   branch: varchar('branch', { length: 100 }),
+  balance: double('balance').notNull(),
+  accountName: varchar('account_name', { length: 100 }).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
