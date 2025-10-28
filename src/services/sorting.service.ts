@@ -36,17 +36,6 @@ export const createSorting = async (
         .set({ isSorted: true, updatedAt: new Date() })
         .where(eq(purchaseModel.purchaseId, purchaseId))
 
-      // 3️⃣ Create a negative transaction for the purchase (since it’s now sorted)
-      await tx.insert(storeTransactionModel).values({
-        itemId: purchase.itemId,
-        quantity: String(`-${purchase.totalQuantity}`),
-        transactionDate: purchase.purchaseDate,
-        reference: String(purchase.purchaseId),
-        referenceType: 'purchase',
-        createdBy: purchase.createdBy,
-        createdAt: new Date(),
-      })
-
       // 4️⃣ Loop over sorting data (each item)
       for (const sortingData of sortingDataArray) {
         // Insert into sortingModel
@@ -57,6 +46,17 @@ export const createSorting = async (
             createdAt: new Date(),
           })
           .$returningId()
+
+        // Insert corresponding transaction (-quantity) for the purchased item
+        await tx.insert(storeTransactionModel).values({
+          itemId: purchase.itemId,
+          quantity: String(`-${sortingData.totalQuantity}`),
+          transactionDate: sortingData.sortingDate,
+          reference: String(purchase.purchaseId),
+          referenceType: 'purchase',
+          createdBy: purchase.createdBy,
+          createdAt: new Date(),
+        })
 
         // Insert corresponding transaction (+quantity)
         await tx.insert(storeTransactionModel).values({
@@ -227,3 +227,35 @@ export const editSorting = async (
   return trx
 }
 
+export const deleteSortingService = async (id: number, userId: number) => {
+  return await db.transaction(async (tx) => {
+    // 1️⃣ Fetch sorting record
+    const [sortingData] = await tx
+      .select()
+      .from(sortingModel)
+      .where(eq(sortingModel.sortingId, id))
+
+    if (!sortingData) {
+      throw new Error('Sorting record not found')
+    }
+
+    // 2️⃣ Insert negative entry into store_transaction
+    await tx.insert(storeTransactionModel).values({
+      itemId: sortingData.itemId,
+      quantity: String(`-${sortingData.totalQuantity}`),
+      transactionDate: sortingData.sortingDate,
+      reference: String(sortingData.sortingId),
+      referenceType: 'sorting',
+      createdBy: userId,
+      createdAt: new Date(),
+    })
+
+    // 3️⃣ Delete sorting record
+    await tx.delete(sortingModel).where(eq(sortingModel.sortingId, id))
+
+    return {
+      success: true,
+      message: `Sorting ID ${id} deleted successfully.`,
+    }
+  })
+}

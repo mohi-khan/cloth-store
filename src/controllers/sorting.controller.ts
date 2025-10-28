@@ -5,6 +5,7 @@ import { requirePermission } from '../services/utils/jwt.utils'
 import { z } from 'zod'
 import {
   createSorting,
+  deleteSortingService,
   editSorting,
   getAllSortings,
   getSortingById,
@@ -111,3 +112,23 @@ export const editSortingController = async (
   }
 };
 
+export const deleteSortingController = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id)
+    const userId = Number(req.params.userId) // Usually comes from auth middleware
+
+    if (!id || isNaN(id)) {
+      res.status(400).json({ error: 'Invalid sorting ID' })
+    }
+
+    if (!userId) {
+      res.status(400).json({ error: 'Missing user ID' })
+    }
+
+    const result = await deleteSortingService(id, userId)
+    res.status(200).json(result)
+  } catch (error: any) {
+    console.error('Error deleting sorting:', error)
+    res.status(500).json({ error: error.message || 'Failed to delete sorting' })
+  }
+}
