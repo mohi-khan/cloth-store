@@ -6,7 +6,7 @@ import {
   storeTransactionModel,
   customerModel,
   bankAccountModel,
-  saleTransactionModel,
+  salesTransactionModel,
 } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 
@@ -38,7 +38,7 @@ export const createSale = async (data: {
 
       const saleMasterId = newSaleMaster.saleMasterId
 
-      // 2️⃣ Insert each sale detail
+      // 2️⃣ Insert each sale detail + related transactions
       for (const item of saleDetails) {
         await tx.insert(salesDetailsModel).values({
           saleMasterId,
@@ -50,7 +50,7 @@ export const createSale = async (data: {
           createdAt: new Date(),
         })
 
-        // 3️⃣ Store transaction (negative quantity)
+        // 3️⃣ Store transaction (negative quantity for stock deduction)
         await tx.insert(storeTransactionModel).values({
           itemId: item.itemId,
           quantity: String(`-${item.quantity}`),
@@ -61,12 +61,12 @@ export const createSale = async (data: {
           createdAt: new Date(),
         })
 
-        
-        await tx.insert(saleTransactionModel).values({
-          itemId: item.itemId,
-          quantity: String(`+${item.quantity}`),
+        // 4️⃣ Sales transaction (recording total sale amount per sale)
+        await tx.insert(salesTransactionModel).values({
+          saleMasterId,
+          customerId: salesMaster.customerId,
+          amount: String(`+${item.amount}`),
           transactionDate: salesMaster.saleDate,
-          reference: String(saleMasterId),
           referenceType: 'sales',
           createdBy: salesMaster.createdBy,
           createdAt: new Date(),

@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { db } from '../config/database'
-import { itemModel, NewItem } from '../schemas'
+import { itemModel, NewItem, storeTransactionModel } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 
 // Create
@@ -55,3 +55,16 @@ export const editItem = async (
 
   return updatedItem
 }
+
+export const getItemTotalQuantity = async (itemId: number) => {
+  const result = await db
+    .select({
+      availableQuantity: sql<number>`SUM(${storeTransactionModel.quantity})`,
+    })
+    .from(storeTransactionModel)
+    .where(eq(storeTransactionModel.itemId, itemId))
+    .groupBy(storeTransactionModel.itemId);
+
+  // If item not found, return availableQuantity = 0
+  return result.length > 0 ? result[0] : { availableQuantity: 0 };
+};
