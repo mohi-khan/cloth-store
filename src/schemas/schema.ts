@@ -266,22 +266,20 @@ export const storeTransactionModel = mysqlTable('store_transaction', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
-export const saleTransactionModel = mysqlTable('sales_transaction', {
+export const salesTransactionModel = mysqlTable('sales_transaction', {
   transactionId: int('transaction_id').autoincrement().primaryKey(),
-  itemId: int('item_id').references(() => itemModel.itemId, {
+  saleMasterId: int('sale_master_id').references(
+    () => salesMasterModel.saleMasterId,
+    {
+      onDelete: 'set null',
+    }
+  ),
+  customerId: int('customer_id').references(() => customerModel.customerId, {
     onDelete: 'set null',
   }),
-  quantity: varchar('quantity', { length: 100 }).notNull(),
+  amount: varchar('amount', { length: 100 }).notNull(),
   transactionDate: date('transaction_date').notNull(),
-  reference: varchar('reference', { length: 255 }),
-  referenceType: mysqlEnum('reference_type', [
-    'purchase',
-    'sorting',
-    'sales',
-    'sales return',
-    'purchase return',
-    'wastage',
-  ]).notNull(),
+  referenceType: mysqlEnum('reference_type', ['sales']).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
@@ -416,6 +414,20 @@ export const storeTransactionRelations = relations(
     item: one(itemModel, {
       fields: [storeTransactionModel.itemId],
       references: [itemModel.itemId],
+    }),
+  })
+)
+
+export const salesTransactionRelations = relations(
+  salesTransactionModel,
+  ({ one }) => ({
+    saleMaster: one(salesMasterModel, {
+      fields: [salesTransactionModel.saleMasterId],
+      references: [salesMasterModel.saleMasterId],
+    }),
+    customer: one(customerModel, {
+      fields: [salesTransactionModel.customerId],
+      references: [customerModel.customerId],
     }),
   })
 )

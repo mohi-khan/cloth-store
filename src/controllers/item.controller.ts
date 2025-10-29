@@ -7,6 +7,7 @@ import {
   editItem,
   getAllItems,
   getItemById,
+  getItemTotalQuantity,
 } from '../services/item.service'
 
 // Schema validation
@@ -83,3 +84,20 @@ export const editItemController = async (
     next(error)
   }
 }
+
+export const getItemQuantityController = async (req: Request, res: Response) => {
+  try {
+    const { itemId } = req.params;
+
+    if (!itemId) {
+      res.status(400).json({ message: "itemId is required" });
+    }
+
+    const result = await getItemTotalQuantity(Number(itemId));
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching item quantity:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
