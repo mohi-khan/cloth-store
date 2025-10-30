@@ -18,14 +18,22 @@ export const createPurchase = async (
         })
         .$returningId(); // returns inserted id (purchaseId)
 
+        const itemData = await tx.query.itemModel.findFirst({
+          where: eq(itemModel.itemId, purchaseData.itemId),
+        })
+
+        if (!itemData) {
+          throw new Error(`Item with ID ${purchaseData.itemId} not found`)
+        }
+
       // 2️⃣ Insert related record into store_transaction table
       await tx.insert(storeTransactionModel).values({
         itemId: purchaseData.itemId,
         quantity: String(`+${purchaseData.totalQuantity}`),
         transactionDate: purchaseData.purchaseDate,
-        reference: String(newPurchase.purchaseId ?? ''), // store purchase id reference
+        reference: String(newPurchase.purchaseId ?? ''),
         referenceType: 'purchase',
-        price: purchaseData.totalAmount,
+        price: itemData.sellPriece,
         createdBy: purchaseData.createdBy,
         createdAt: new Date(),
       });
