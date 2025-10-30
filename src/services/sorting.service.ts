@@ -30,6 +30,24 @@ export const createSorting = async (
         throw new Error(`Purchase with ID ${purchaseId} not found`)
       }
 
+      const item = await tx.query.itemModel.findFirst({
+        where: eq(itemModel.itemId, purchase.itemId),
+      })
+
+      if (!item) {
+        throw new Error(`Purchase with ID ${purchaseId} not found`)
+      }
+
+      // const itemData = await db
+      //   .select()
+      //   .from(itemModel)
+      //   .where(eq(itemModel.itemId, purchase.itemId))
+      //   .limit(1)
+
+      // if (!itemData.length) {
+      //   throw BadRequestError('Sorting not found')
+      // }
+
       // 2️⃣ Mark purchase as sorted
       await tx
         .update(purchaseModel)
@@ -51,6 +69,7 @@ export const createSorting = async (
         await tx.insert(storeTransactionModel).values({
           itemId: purchase.itemId,
           quantity: String(`-${sortingData.totalQuantity}`),
+          price: item.avgPrice,
           transactionDate: sortingData.sortingDate,
           reference: String(purchase.purchaseId),
           referenceType: 'purchase',
@@ -62,6 +81,7 @@ export const createSorting = async (
         await tx.insert(storeTransactionModel).values({
           itemId: sortingData.itemId,
           quantity: String(`+${sortingData.totalQuantity}`),
+          price: item.avgPrice,
           transactionDate: sortingData.sortingDate,
           reference: String(newSorting.sortingId ?? ''),
           referenceType: 'sorting',
@@ -156,11 +176,39 @@ export const editSorting = async (
     throw BadRequestError('No sorting data provided')
   }
 
+  // const itemData = await db
+  //   .select()
+  //   .from(itemModel)
+  //   .where(eq(itemModel.itemId, sortingDataArray[0].itemId!))
+  //   .limit(1)
+
+  // if (!itemData.length) {
+  //   throw BadRequestError('Sorting not found')
+  // }
+
   const trx = await db.transaction(async (tx) => {
-    const processedRecords = []
+    interface ProcessedRecord {
+      action: 'updated' | 'created';
+      sortingId: number;
+      [key: string]: any; // for additional fields from sorting model
+    }
+    
+    const processedRecords: ProcessedRecord[] = [];
 
     for (const sortingData of sortingDataArray) {
       const { sortingId, ...fields } = sortingData
+
+      if (!sortingData.itemId) {
+        throw new Error('Item ID is required')
+      }
+
+      const item = await tx.query.itemModel.findFirst({
+        where: eq(itemModel.itemId, sortingData.itemId),
+      })
+
+      if (!item) {
+        throw new Error(`sorting with ID ${sortingData.itemId} not found`)
+      }
 
       if (sortingId) {
         // --- Update existing record ---
@@ -177,7 +225,7 @@ export const editSorting = async (
           throw BadRequestError(`Sorting record with ID ${sortingId} not found`)
         }
 
-        processedRecords.push({ ...updatedItem, action: 'updated' })
+        processedRecords.push({ ...updatedItem, sortingId, action: 'updated' })
       } else {
         // --- Insert new record ---
         const requiredFields = [
@@ -206,12 +254,13 @@ export const editSorting = async (
           } satisfies typeof sortingModel.$inferInsert)
           .execute()
 
-        processedRecords.push({ ...newSorting, action: 'created' })
+        processedRecords.push({ ...newSorting, sortingId: newSorting.insertId, action: 'created' })
 
         // Insert corresponding store transaction
         await tx.insert(storeTransactionModel).values({
           itemId: fields.itemId!,
           quantity: `+${fields.totalQuantity}`,
+          price: item.avgPrice,
           transactionDate: fields.sortingDate!,
           // reference: String(newSorting.sortingId ?? ''),
           referenceType: 'sorting',
@@ -239,10 +288,20 @@ export const deleteSortingService = async (id: number, userId: number) => {
       throw new Error('Sorting record not found')
     }
 
+    const [itemData] = await tx
+      .select()
+      .from(itemModel)
+      .where(eq(itemModel.itemId, id))
+
+    if (!itemData) {
+      throw new Error('item record not found')
+    }
+
     // 2️⃣ Insert negative entry into store_transaction
     await tx.insert(storeTransactionModel).values({
       itemId: sortingData.itemId,
       quantity: String(`-${sortingData.totalQuantity}`),
+      price: itemData.avgPrice,
       transactionDate: sortingData.sortingDate,
       reference: String(sortingData.sortingId),
       referenceType: 'sorting',

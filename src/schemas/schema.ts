@@ -64,6 +64,7 @@ export const itemModel = mysqlTable('item', {
   itemId: int('item_id').autoincrement().primaryKey(),
   itemName: varchar('item_name', { length: 100 }).notNull(),
   sellPriece: double('sell_price').notNull(),
+  avgPrice: double('avg_price').notNull(),
   isBulk: boolean('is_bulk').default(false).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -249,6 +250,7 @@ export const storeTransactionModel = mysqlTable('store_transaction', {
   itemId: int('item_id').references(() => itemModel.itemId, {
     onDelete: 'set null',
   }),
+  price: double('price').notNull(),
   quantity: varchar('quantity', { length: 100 }).notNull(),
   transactionDate: date('transaction_date').notNull(),
   reference: varchar('reference', { length: 255 }),
