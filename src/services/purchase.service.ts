@@ -33,7 +33,7 @@ export const createPurchase = async (
         transactionDate: purchaseData.purchaseDate,
         reference: String(newPurchase.purchaseId ?? ''),
         referenceType: 'purchase',
-        price: itemData.sellPriece,
+        price: purchaseData.totalAmount/purchaseData.totalQuantity,
         createdBy: purchaseData.createdBy,
         createdAt: new Date(),
       });
