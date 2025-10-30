@@ -25,6 +25,7 @@ export const createPurchase = async (
         transactionDate: purchaseData.purchaseDate,
         reference: String(newPurchase.purchaseId ?? ''), // store purchase id reference
         referenceType: 'purchase',
+        price: purchaseData.totalAmount,
         createdBy: purchaseData.createdBy,
         createdAt: new Date(),
       });

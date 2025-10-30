@@ -7,6 +7,7 @@ import {
   customerModel,
   bankAccountModel,
   salesTransactionModel,
+  itemModel,
 } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 
@@ -26,6 +27,7 @@ export const createSale = async (data: {
   const trx = await db.transaction(async (tx) => {
     try {
       const { salesMaster, saleDetails } = data
+      
 
       // 1️⃣ Insert into sales_master
       const [newSaleMaster] = await tx
@@ -38,8 +40,16 @@ export const createSale = async (data: {
 
       const saleMasterId = newSaleMaster.saleMasterId
 
+      
       // 2️⃣ Insert each sale detail + related transactions
       for (const item of saleDetails) {
+        const itemData = await tx.query.itemModel.findFirst({
+        where: eq(itemModel.itemId, item.itemId),
+      })
+
+      if (!itemData) {
+        throw new Error(`Purchase with ID ${item.itemId} not found`)
+      }
         await tx.insert(salesDetailsModel).values({
           saleMasterId,
           itemId: item.itemId,
@@ -54,6 +64,7 @@ export const createSale = async (data: {
         await tx.insert(storeTransactionModel).values({
           itemId: item.itemId,
           quantity: String(`-${item.quantity}`),
+          price: itemData.avgPrice,
           transactionDate: salesMaster.saleDate,
           reference: String(saleMasterId),
           referenceType: 'sales',
@@ -258,9 +269,19 @@ export const deleteSale = async (saleMasterId: number, saleDetailsId: number, us
       throw new Error('Sale record not found')
     }
 
+    const [itemData] = await tx
+      .select()
+      .from(itemModel)
+      .where(eq(itemModel.itemId, salesDetailsData.itemId))
+
+    if (!itemData) {
+      throw new Error('Sale record not found')
+    }
+
     await tx.insert(storeTransactionModel).values({
       itemId: salesDetailsData.itemId,
       quantity: String(`-${salesDetailsData.quantity}`),
+      price: itemData.avgPrice,
       transactionDate: new Date(),
       reference: String(salesDetailsData.saleDetailsId),
       referenceType: 'sales',
