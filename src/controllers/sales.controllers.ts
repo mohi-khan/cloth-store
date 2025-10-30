@@ -3,6 +3,7 @@ import { requirePermission } from '../services/utils/jwt.utils'
 import { z } from 'zod'
 import {
   createSale,
+  deleteSale,
   editSale,
   getAllSales,
   getSaleById,
@@ -139,5 +140,31 @@ export const editSaleController = async (
     })
   } catch (error) {
     next(error)
+  }
+}
+
+export const deleteSaleController = async (req: Request, res: Response) => {
+  try {
+    const saleMasterId = Number(req.params.saleMasterId)
+    const saleDetailsId = Number(req.params.saleDetailsId)
+    const userId = Number(req.params.userId) // Usually comes from auth middleware
+
+    if (!saleMasterId || isNaN(saleMasterId)) {
+      res.status(400).json({ error: 'Invalid saleMasterId ID' })
+    }
+
+    if (!saleDetailsId || isNaN(saleDetailsId)) {
+      res.status(400).json({ error: 'Invalid saleDetailsId ID' })
+    }
+
+    if (!userId) {
+      res.status(400).json({ error: 'Missing user ID' })
+    }
+
+    const result = await deleteSale(saleMasterId, saleDetailsId, userId)
+    res.status(200).json(result)
+  } catch (error: any) {
+    console.error('Error deleting sorting:', error)
+    res.status(500).json({ error: error.message || 'Failed to delete sorting' })
   }
 }

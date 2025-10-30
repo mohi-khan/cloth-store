@@ -237,3 +237,52 @@ export const editSale = async (
     return await getSaleById(saleMasterId)
   })
 }
+
+export const deleteSale = async (saleMasterId: number, saleDetailsId: number, userId: number) => {
+  return await db.transaction(async (tx) => {
+    const [salesMasterData] = await tx
+      .select()
+      .from(salesMasterModel)
+      .where(eq(salesMasterModel.saleMasterId, saleMasterId))
+
+    if (!salesMasterData) {
+      throw new Error('Sale record not found')
+    }
+
+    const [salesDetailsData] = await tx
+      .select()
+      .from(salesDetailsModel)
+      .where(eq(salesDetailsModel.saleDetailsId, saleDetailsId))
+
+    if (!salesDetailsData) {
+      throw new Error('Sale record not found')
+    }
+
+    await tx.insert(storeTransactionModel).values({
+      itemId: salesDetailsData.itemId,
+      quantity: String(`-${salesDetailsData.quantity}`),
+      transactionDate: new Date(),
+      reference: String(salesDetailsData.saleDetailsId),
+      referenceType: 'sales',
+      createdBy: userId,
+      createdAt: new Date(),
+    })
+
+    await tx.insert(salesTransactionModel).values({
+      saleMasterId,
+      customerId: salesMasterData.customerId,
+      amount: String(`+${salesDetailsData.amount}`),
+      transactionDate: new Date(),
+      referenceType: 'sales',
+      createdBy: userId,
+      createdAt: new Date(),
+    })
+
+    await tx.delete(salesDetailsModel).where(eq(salesDetailsModel.saleDetailsId, saleDetailsId))
+
+    return {
+      success: true,
+      message: `Sorting ID ${saleDetailsId} deleted successfully.`,
+    }
+  })
+}
