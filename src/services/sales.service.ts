@@ -27,7 +27,6 @@ export const createSale = async (data: {
   const trx = await db.transaction(async (tx) => {
     try {
       const { salesMaster, saleDetails } = data
-      
 
       // 1️⃣ Insert into sales_master
       const [newSaleMaster] = await tx
@@ -40,30 +39,36 @@ export const createSale = async (data: {
 
       const saleMasterId = newSaleMaster.saleMasterId
 
-      
       // 2️⃣ Insert each sale detail + related transactions
-      for (const item of saleDetails) {
+      for (const details of saleDetails) {
+        // 1️⃣ Fetch item data from itemModel
         const itemData = await tx.query.itemModel.findFirst({
-        where: eq(itemModel.itemId, item.itemId),
-      })
+          where: eq(itemModel.itemId, details.itemId),
+        })
 
-      if (!itemData) {
-        throw new Error(`Purchase with ID ${item.itemId} not found`)
-      }
+        if (!itemData) {
+          throw new Error(`Item with ID ${details.itemId} not found`)
+        }
+
+        if (itemData.avgPrice == null) {
+          throw new Error(`avgPrice is missing for item ID ${details.itemId}`)
+        }
+
+        // 2️⃣ Insert sale detail
         await tx.insert(salesDetailsModel).values({
           saleMasterId,
-          itemId: item.itemId,
-          quantity: item.quantity,
-          amount: item.amount,
-          unitPrice: item.unitPrice,
+          itemId: details.itemId,
+          quantity: details.quantity,
+          amount: details.amount,
+          unitPrice: details.unitPrice,
           createdBy: salesMaster.createdBy,
           createdAt: new Date(),
         })
 
-        // 3️⃣ Store transaction (negative quantity for stock deduction)
+        // 3️⃣ Insert store transaction (using avgPrice from itemModel)
         await tx.insert(storeTransactionModel).values({
-          itemId: item.itemId,
-          quantity: String(`-${item.quantity}`),
+          itemId: details.itemId,
+          quantity: String(`-${details.quantity}`),
           price: itemData.avgPrice,
           transactionDate: salesMaster.saleDate,
           reference: String(saleMasterId),
@@ -72,11 +77,11 @@ export const createSale = async (data: {
           createdAt: new Date(),
         })
 
-        // 4️⃣ Sales transaction (recording total sale amount per sale)
+        // 4️⃣ Insert sales transaction
         await tx.insert(salesTransactionModel).values({
           saleMasterId,
           customerId: salesMaster.customerId,
-          amount: String(`+${item.amount}`),
+          amount: String(`+${details.amount}`),
           transactionDate: salesMaster.saleDate,
           referenceType: 'sales',
           createdBy: salesMaster.createdBy,
@@ -249,7 +254,11 @@ export const editSale = async (
   })
 }
 
-export const deleteSale = async (saleMasterId: number, saleDetailsId: number, userId: number) => {
+export const deleteSale = async (
+  saleMasterId: number,
+  saleDetailsId: number,
+  userId: number
+) => {
   return await db.transaction(async (tx) => {
     const [salesMasterData] = await tx
       .select()
@@ -257,7 +266,7 @@ export const deleteSale = async (saleMasterId: number, saleDetailsId: number, us
       .where(eq(salesMasterModel.saleMasterId, saleMasterId))
 
     if (!salesMasterData) {
-      throw new Error('Sale record not found')
+      throw new Error('Sale master record not found')
     }
 
     const [salesDetailsData] = await tx
@@ -266,7 +275,7 @@ export const deleteSale = async (saleMasterId: number, saleDetailsId: number, us
       .where(eq(salesDetailsModel.saleDetailsId, saleDetailsId))
 
     if (!salesDetailsData) {
-      throw new Error('Sale record not found')
+      throw new Error('Sale details record not found')
     }
 
     const [itemData] = await tx
@@ -275,13 +284,21 @@ export const deleteSale = async (saleMasterId: number, saleDetailsId: number, us
       .where(eq(itemModel.itemId, salesDetailsData.itemId))
 
     if (!itemData) {
-      throw new Error('Sale record not found')
+      throw new Error('Item record not found')
     }
 
+    // ✅ Ensure avgPrice is not null
+    const validPrice =
+      itemData.avgPrice ??
+      (() => {
+        throw new Error(`avgPrice not found for itemId: ${salesDetailsData.itemId}`)
+      })()
+
+    // Record store transaction reversal
     await tx.insert(storeTransactionModel).values({
       itemId: salesDetailsData.itemId,
       quantity: String(`-${salesDetailsData.quantity}`),
-      price: itemData.avgPrice,
+      price: validPrice, // ✅ always valid now
       transactionDate: new Date(),
       reference: String(salesDetailsData.saleDetailsId),
       referenceType: 'sales',
@@ -289,6 +306,7 @@ export const deleteSale = async (saleMasterId: number, saleDetailsId: number, us
       createdAt: new Date(),
     })
 
+    // Record sale transaction reversal
     await tx.insert(salesTransactionModel).values({
       saleMasterId,
       customerId: salesMasterData.customerId,
@@ -299,11 +317,14 @@ export const deleteSale = async (saleMasterId: number, saleDetailsId: number, us
       createdAt: new Date(),
     })
 
-    await tx.delete(salesDetailsModel).where(eq(salesDetailsModel.saleDetailsId, saleDetailsId))
+    // Finally delete the sale details row
+    await tx
+      .delete(salesDetailsModel)
+      .where(eq(salesDetailsModel.saleDetailsId, saleDetailsId))
 
     return {
       success: true,
-      message: `Sorting ID ${saleDetailsId} deleted successfully.`,
+      message: `Sale record ID ${saleDetailsId} deleted successfully.`,
     }
   })
 }
