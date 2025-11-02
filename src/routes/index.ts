@@ -9,6 +9,8 @@ import salesRoutes from "./sales.routes"
 import purchaseRoutes from "./purchase.routes"
 import sortingRoutes from "./sorting.routes"
 import accountHeadRoutes from "./accountHead.routes"
+import dashboardRoutes from "./dashboard.routes"
+import transactionRoutes from "./transaction.routes";
 
 const router=Router()
 
@@ -22,5 +24,7 @@ router.use('/sales', salesRoutes)
 router.use('/purchase', purchaseRoutes)
 router.use('/sorting', sortingRoutes)
 router.use('/account-head', accountHeadRoutes)
+router.use('/dashboard', dashboardRoutes)
+router.use('/transaction', transactionRoutes);
 
 export default router;
