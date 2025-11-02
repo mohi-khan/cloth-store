@@ -8,11 +8,19 @@ import {
   getAllTransactions,
   getTransactionById,
 } from '../services/transaction.service'
+import { z } from 'zod'
+
+const dateStringToDate = z.preprocess(
+  (arg) => (typeof arg === "string" || arg instanceof Date ? new Date(arg) : undefined),
+  z.date()
+);
 
 // Schema validation
 const createTransactionSchema = createInsertSchema(transactionModel).omit({
   transactionId: true,
   createdAt: true,
+}).extend({
+  transactionDate: dateStringToDate,
 })
 
 const editTransactionSchema = createTransactionSchema.partial()

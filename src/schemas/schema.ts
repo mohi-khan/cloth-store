@@ -291,7 +291,7 @@ export const salesTransactionModel = mysqlTable('sales_transaction', {
 export const transactionModel = mysqlTable('transaction', {
   transactionId: int('transaction_id').autoincrement().primaryKey(),
   transactionType: mysqlEnum('transaction_type', ['payment', 'recieved', 'contra']),
-  isCash: boolean('is_cash'),
+  isCash: boolean('is_cash').notNull().default(true),
   bankId: int('bank_id').references(() => bankAccountModel.bankAccountId, {
     onDelete: 'set null',
   }),
