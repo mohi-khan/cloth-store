@@ -288,6 +288,27 @@ export const salesTransactionModel = mysqlTable('sales_transaction', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
+export const transactionModel = mysqlTable('transaction', {
+  transactionId: int('transaction_id').autoincrement().primaryKey(),
+  transactionType: mysqlEnum('transaction_type', ['payment', 'recieved', 'contra']),
+  isCash: boolean('is_cash'),
+  bankId: int('bank_id').references(() => bankAccountModel.bankAccountId, {
+    onDelete: 'set null',
+  }),
+  customerId: int('customer_id').references(() => customerModel.customerId, {
+    onDelete: 'set null',
+  }),
+  vendorId: int('vendor_id').references(() => vendorModel.vendorId, {
+    onDelete: 'set null',
+  }),
+  transactionDate: date('transaction_date'),
+  amount: double('amount', { precision: 10, scale: 2 }),
+  createdBy: int('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedBy: int('updated_by'),
+  updatedAt: timestamp('updated_at').onUpdateNow(),
+})
+
 // ========================
 // Relations
 // ========================
@@ -453,6 +474,21 @@ export const sortingRelations = relations(sortingModel, ({ one }) => ({
   }),
 }))
 
+export const transactionRelations = relations(transactionModel, ({ one }) => ({
+  bankAccount: one(bankAccountModel, {
+    fields: [transactionModel.bankId],
+    references: [bankAccountModel.bankAccountId],
+  }),
+  customer: one(customerModel, {
+    fields: [transactionModel.customerId],
+    references: [customerModel.customerId],
+  }),
+  vendor: one(vendorModel, {
+    fields: [transactionModel.vendorId],
+    references: [vendorModel.vendorId],
+  }),
+}))
+
 export type User = typeof userModel.$inferSelect
 export type NewUser = typeof userModel.$inferInsert
 export type Role = typeof roleModel.$inferSelect
@@ -483,3 +519,7 @@ export type NewSorting = typeof sortingModel.$inferInsert
 export type Sorting = typeof sortingModel.$inferSelect
 export type StoreTransaction = typeof storeTransactionModel.$inferSelect
 export type NewStoreTransaction = typeof storeTransactionModel.$inferInsert
+export type SalesTransaction = typeof salesTransactionModel.$inferSelect
+export type NewSalesTransaction = typeof salesTransactionModel.$inferInsert
+export type Transaction = typeof transactionModel.$inferSelect
+export type NewTransaction = typeof transactionModel.$inferInsert
