@@ -4,8 +4,10 @@ import {
   openingBalanceModel,
   NewOpeningBalance,
   bankAccountModel,
+  salesTransactionModel,
 } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
+import { MySqlTableWithColumns, MySqlColumn } from 'drizzle-orm/mysql-core'
 
 // Create
 export const createOpeningBalance = async (
@@ -17,6 +19,18 @@ export const createOpeningBalance = async (
   try {
     const [newItem] = await db.insert(openingBalanceModel).values({
       ...openingBalanceData,
+      createdAt: new Date(),
+    })
+
+    await db.insert(salesTransactionModel).values({
+      saleMasterId: null,
+      customerId: openingBalanceData.customerId,
+      amount: String(
+        `${openingBalanceData.type === 'debit' ? '+' : '-'}${openingBalanceData.openingAmount}`
+      ),
+      transactionDate: new Date(),
+      referenceType: 'opening balance',
+      createdBy: openingBalanceData.createdBy,
       createdAt: new Date(),
     })
 
