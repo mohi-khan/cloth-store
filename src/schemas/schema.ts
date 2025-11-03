@@ -1,4 +1,4 @@
-import { relations, sql } from 'drizzle-orm'
+import { avg, relations, sql } from 'drizzle-orm'
 import {
   boolean,
   int,
@@ -145,6 +145,7 @@ export const salesDetailsModel = mysqlTable('sales_details', {
   itemId: int('item_id')
     .notNull()
     .references(() => itemModel.itemId, { onDelete: 'cascade' }),
+  avgPrice: double('avg_price'),
   quantity: int('quantity').notNull(),
   amount: double('amount').notNull(),
   unitPrice: double('unit_price').notNull(),

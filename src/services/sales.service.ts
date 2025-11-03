@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm'
+import { avg, eq, inArray } from 'drizzle-orm'
 import { db } from '../config/database'
 import {
   salesMasterModel,
@@ -58,6 +58,7 @@ export const createSale = async (data: {
         await tx.insert(salesDetailsModel).values({
           saleMasterId,
           itemId: details.itemId,
+          avgPrice: itemData.avgPrice,
           quantity: details.quantity,
           amount: details.amount,
           unitPrice: details.unitPrice,
@@ -224,6 +225,7 @@ export const editSale = async (
           toInsert.map((d) => ({
             // saleMasterId,
             itemId: d.itemId!,
+            avgPrice: d.avgPrice!,
             quantity: d.quantity!,
             unitPrice: d.unitPrice!,
             saleMasterId: masterData.saleMasterId!,
