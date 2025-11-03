@@ -24,7 +24,7 @@ export const getRemainingAmountService = async () => {
   COALESCE(SUM(sm.total_amount), 0) AS total_sales,
   COALESCE(SUM(sm.discount_amount), 0) AS total_discount,
   COALESCE(SUM(IFNULL(t.total_received,0)), 0) AS total_received,
-  coalesce(SUM(sm.total_amount)-SUM(IFNULL(t.total_received,0)),0) AS unpaid_amount
+  coalesce(SUM(sm.total_amount)-SUM(IFNULL(t.total_received,0))-SUM(sm.discount_amount),0) AS unpaid_amount
 FROM customer AS c
 LEFT JOIN (
   SELECT 

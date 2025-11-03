@@ -1,4 +1,4 @@
-import { relations, sql } from 'drizzle-orm'
+import { avg, relations, sql } from 'drizzle-orm'
 import {
   boolean,
   int,
@@ -145,6 +145,7 @@ export const salesDetailsModel = mysqlTable('sales_details', {
   itemId: int('item_id')
     .notNull()
     .references(() => itemModel.itemId, { onDelete: 'cascade' }),
+  avgPrice: double('avg_price'),
   quantity: int('quantity').notNull(),
   amount: double('amount').notNull(),
   unitPrice: double('unit_price').notNull(),
@@ -290,7 +291,11 @@ export const salesTransactionModel = mysqlTable('sales_transaction', {
 
 export const transactionModel = mysqlTable('transaction', {
   transactionId: int('transaction_id').autoincrement().primaryKey(),
-  transactionType: mysqlEnum('transaction_type', ['payment', 'recieved', 'contra']),
+  transactionType: mysqlEnum('transaction_type', [
+    'payment',
+    'recieved',
+    'contra',
+  ]),
   isCash: boolean('is_cash').notNull().default(true),
   bankId: int('bank_id').references(() => bankAccountModel.bankAccountId, {
     onDelete: 'set null',
@@ -303,6 +308,15 @@ export const transactionModel = mysqlTable('transaction', {
   }),
   transactionDate: date('transaction_date'),
   amount: double('amount', { precision: 10, scale: 2 }),
+  createdBy: int('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedBy: int('updated_by'),
+  updatedAt: timestamp('updated_at').onUpdateNow(),
+})
+
+export const openingBalanceModel = mysqlTable('opening_balance', {
+  openingBalanceId: int('opening_balance_id').autoincrement().primaryKey(),
+  openingAmount: double('opening_amount').notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
@@ -523,3 +537,5 @@ export type SalesTransaction = typeof salesTransactionModel.$inferSelect
 export type NewSalesTransaction = typeof salesTransactionModel.$inferInsert
 export type Transaction = typeof transactionModel.$inferSelect
 export type NewTransaction = typeof transactionModel.$inferInsert
+export type OpeningBalance = typeof openingBalanceModel.$inferSelect
+export type NewOpeningBalance = typeof openingBalanceModel.$inferInsert
