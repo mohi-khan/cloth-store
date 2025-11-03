@@ -282,7 +282,7 @@ export const salesTransactionModel = mysqlTable('sales_transaction', {
   }),
   amount: varchar('amount', { length: 100 }).notNull(),
   transactionDate: date('transaction_date').notNull(),
-  referenceType: mysqlEnum('reference_type', ['sales']).notNull(),
+  referenceType: mysqlEnum('reference_type', ['sales', 'opening balance', 'transaction']).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
@@ -293,7 +293,7 @@ export const transactionModel = mysqlTable('transaction', {
   transactionId: int('transaction_id').autoincrement().primaryKey(),
   transactionType: mysqlEnum('transaction_type', [
     'payment',
-    'recieved',
+    'received',
     'contra',
   ]),
   isCash: boolean('is_cash').notNull().default(true),
@@ -317,6 +317,11 @@ export const transactionModel = mysqlTable('transaction', {
 export const openingBalanceModel = mysqlTable('opening_balance', {
   openingBalanceId: int('opening_balance_id').autoincrement().primaryKey(),
   openingAmount: double('opening_amount').notNull(),
+  isParty: boolean('is_party').notNull(),
+  customerId: int('customer_id').references(() => customerModel.customerId, {
+    onDelete: 'set null',
+  }),
+  type: mysqlEnum('type', ['debit', 'credit']).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
