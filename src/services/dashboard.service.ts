@@ -39,7 +39,7 @@ LEFT JOIN (
     customer_id, 
     SUM(amount) AS total_received
   FROM transaction
-  WHERE transaction_type = 'recieved'
+  WHERE transaction_type = 'received'
   GROUP BY customer_id
 ) AS t ON t.customer_id = c.customer_id
 GROUP BY c.customer_id, c.name;

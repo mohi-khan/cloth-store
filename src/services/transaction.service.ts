@@ -6,6 +6,7 @@ import {
   bankAccountModel,
   customerModel,
   vendorModel,
+  salesTransactionModel,
 } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 
@@ -16,6 +17,18 @@ export const createTransaction = async (
   try {
     const [newItem] = await db.insert(transactionModel).values({
       ...transactionData,
+      createdAt: new Date(),
+    })
+
+    await db.insert(salesTransactionModel).values({
+      saleMasterId: null,
+      customerId: transactionData.customerId,
+      amount: String(
+        `${transactionData.isCash === true ? '-' : '+'}${transactionData.amount}`
+      ),
+      transactionDate: new Date(),
+      referenceType: 'transaction',
+      createdBy: transactionData.createdBy,
       createdAt: new Date(),
     })
 

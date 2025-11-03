@@ -282,7 +282,7 @@ export const salesTransactionModel = mysqlTable('sales_transaction', {
   }),
   amount: varchar('amount', { length: 100 }).notNull(),
   transactionDate: date('transaction_date').notNull(),
-  referenceType: mysqlEnum('reference_type', ['sales', 'opening balance']).notNull(),
+  referenceType: mysqlEnum('reference_type', ['sales', 'opening balance', 'transaction']).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
@@ -293,7 +293,7 @@ export const transactionModel = mysqlTable('transaction', {
   transactionId: int('transaction_id').autoincrement().primaryKey(),
   transactionType: mysqlEnum('transaction_type', [
     'payment',
-    'recieved',
+    'received',
     'contra',
   ]),
   isCash: boolean('is_cash').notNull().default(true),
