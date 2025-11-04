@@ -9,6 +9,7 @@ interface GetCashOpeningBalanceParams {
   closingFlag:boolean;
 }
 interface CashReportRow {
+  id: number;
   date: string;
   particular: string;
   amount: number;
@@ -45,6 +46,7 @@ const opening = await db
 
   const result: CashReportRow[] = [
     {
+      id: Date.now(),
       date,
       particular: closingFlag ? 'Closing Balance' :'Opening Balance' ,
       amount: balance,
@@ -63,6 +65,7 @@ const openingBalanceRows = await getCashOpeningBalance(startDateParam);
 
 const query = sql`
   SELECT
+    t.transaction_id AS id,      -- ✅ use existing database ID
     t.transaction_date AS date,
     t.amount,
     CASE
@@ -74,7 +77,8 @@ const query = sql`
   LEFT JOIN \`customer\` c ON t.customer_id = c.customer_id
   LEFT JOIN \`vendor\` v ON t.vendor_id = v.vendor_id
   WHERE t.is_cash = 1 AND t.transaction_date BETWEEN ${startDate} AND ${endDate};
-`   
+`;
+   
 
    const [rows] = await db.execute<CashReportRow[]>(query);
    const transactionRows:CashReportRow[]=rows as unknown as CashReportRow[];
