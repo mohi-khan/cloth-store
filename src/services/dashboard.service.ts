@@ -1,7 +1,7 @@
 import { db } from '../config/database'
 import { sql } from 'drizzle-orm'
 
-export const getItemSummaryService = async () => {
+export const getItemSummary = async () => {
   const [rows] = await db.execute(sql`
     SELECT 
       i.item_name,
@@ -16,7 +16,7 @@ export const getItemSummaryService = async () => {
   return rows
 }
 
-export const getRemainingAmountService = async () => {
+export const getRemainingAmount = async () => {
   const [rows] = await db.execute(sql`
     SELECT 
   c.customer_id,
@@ -43,6 +43,24 @@ LEFT JOIN (
   GROUP BY customer_id
 ) AS t ON t.customer_id = c.customer_id
 GROUP BY c.customer_id, c.name;
+  `)
+
+  return rows
+}
+
+export const getCashInHand = async () => {
+  const [rows] = await db.execute(sql`
+    SELECT SUM(t1.amount) as 'cashInHand'
+FROM (SELECT IFNULL(opening_amount,0) as amount
+FROM opening_balance WHERE is_party= 0 AND customer_id IS NULL AND type='debit'
+UNION
+SELECT IFNULL(SUM(amount),0) as amount
+FROM  
+transaction WHERE transaction_type='recieved' AND is_cash=1 
+UNION
+SELECT IFNULL(CONCAT('-',SUM(amount)),0) as amount
+FROM  
+transaction WHERE transaction_type='payment' AND is_cash=1) AS t1 ;
   `)
 
   return rows
