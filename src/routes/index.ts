@@ -12,6 +12,7 @@ import accountHeadRoutes from "./accountHead.routes"
 import dashboardRoutes from "./dashboard.routes"
 import transactionRoutes from "./transaction.routes";
 import openingBalanceRoutes from "./openingBalance.routes";
+import reportRoutes from "./report.routes";
 
 const router=Router()
 
@@ -28,5 +29,6 @@ router.use('/account-head', accountHeadRoutes)
 router.use('/dashboard', dashboardRoutes)
 router.use('/transaction', transactionRoutes);
 router.use('/opening-balance', openingBalanceRoutes);
+router.use('/report', reportRoutes);
 
 export default router;
