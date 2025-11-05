@@ -22,17 +22,17 @@ export const createOpeningBalance = async (
       createdAt: new Date(),
     })
 
-    await db.insert(salesTransactionModel).values({
-      saleMasterId: null,
-      customerId: openingBalanceData.customerId,
-      amount: String(
-        `${openingBalanceData.type === 'debit' ? '+' : '-'}${openingBalanceData.openingAmount}`
-      ),
-      transactionDate: new Date(),
-      referenceType: 'opening balance',
-      createdBy: openingBalanceData.createdBy,
-      createdAt: new Date(),
-    })
+    // await db.insert(salesTransactionModel).values({
+    //   saleMasterId: null,
+    //   customerId: openingBalanceData.customerId,
+    //   amount: String(
+    //     `${openingBalanceData.type === 'debit' ? '+' : '-'}${openingBalanceData.openingAmount}`
+    //   ),
+    //   transactionDate: new Date(),
+    //   referenceType: 'opening balance',
+    //   createdBy: openingBalanceData.createdBy,
+    //   createdAt: new Date(),
+    // })
 
     return newItem
   } catch (error) {

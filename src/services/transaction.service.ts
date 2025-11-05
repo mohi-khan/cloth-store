@@ -20,17 +20,17 @@ export const createTransaction = async (
       createdAt: new Date(),
     })
 
-    await db.insert(salesTransactionModel).values({
-      saleMasterId: null,
-      customerId: transactionData.customerId,
-      amount: String(
-        `${transactionData.isCash === true ? '-' : '+'}${transactionData.amount}`
-      ),
-      transactionDate: new Date(),
-      referenceType: 'transaction',
-      createdBy: transactionData.createdBy,
-      createdAt: new Date(),
-    })
+    // await db.insert(salesTransactionModel).values({
+    //   saleMasterId: null,
+    //   customerId: transactionData.customerId,
+    //   amount: String(
+    //     `${transactionData.isCash === true ? '-' : '+'}${transactionData.amount}`
+    //   ),
+    //   transactionDate: new Date(),
+    //   referenceType: 'transaction',
+    //   createdBy: transactionData.createdBy,
+    //   createdAt: new Date(),
+    // })
 
     return newItem
   } catch (error) {
@@ -89,17 +89,28 @@ export const getTransactionById = async (transactionId: number) => {
 
 // Update
 export const editTransaction = async (
-  transactionId: number,
-  transactionData: Partial<NewTransaction>
+  createdAt: string,
+  transactionsData: Partial<NewTransaction>[]
 ) => {
-  const [updatedItem] = await db
-    .update(transactionModel)
-    .set(transactionData)
-    .where(eq(transactionModel.transactionId, transactionId))
+  const createdAtDate = new Date(createdAt)
 
-  if (!updatedItem) {
-    throw BadRequestError('Transaction not found')
+  const results = []
+
+  for (const transactionData of transactionsData) {
+    const updated = await db
+      .update(transactionModel)
+      .set(transactionData)
+      .where(eq(transactionModel.createdAt, createdAtDate))
+      .execute()
+
+    if (updated.length > 0) {
+      results.push(...updated)
+    }
   }
 
-  return updatedItem
+  if (results.length === 0) {
+    throw BadRequestError('No transactions found for the given createdAt timestamp')
+  }
+
+  return results
 }
