@@ -1,37 +1,49 @@
-import { db } from "../config/database";
-import { and, eq, isNotNull, lte, sql } from "drizzle-orm";
-import { openingBalanceModel, salesTransactionModel, transactionModel } from "../schemas";
-
-
+import { db } from '../config/database'
+import { and, eq, isNotNull, lte, sql } from 'drizzle-orm'
+import {
+  openingBalanceModel,
+  salesTransactionModel,
+  transactionModel,
+} from '../schemas'
 
 interface GetCashOpeningBalanceParams {
-  date: string, // 'YYYY-MM-DD'
-  closingFlag:boolean;
+  date: string // 'YYYY-MM-DD'
+  closingFlag: boolean
 }
 
 interface GetPartyOpeningBalanceParams {
-  date: string, // 'YYYY-MM-DD'
-  closingFlag:boolean;
-  partyId:number;
+  date: string // 'YYYY-MM-DD'
+  closingFlag: boolean
+  partyId: number
 }
 interface CashReportRow {
-  date: string;
-  particular: string;
-  amount: number;
+  id: number
+  date: string
+  particular: string
+  amount: number
 }
 
-export const getCashOpeningBalance = async ({ date,closingFlag }: GetCashOpeningBalanceParams) => {
+//cash report
+export const getCashOpeningBalance = async ({
+  date,
+  closingFlag,
+}: GetCashOpeningBalanceParams) => {
   // 1️⃣ Get opening cash balance (assuming isParty = false means cash)
 
-const opening = await db
+  const opening = await db
     .select({
       openingAmount: openingBalanceModel.openingAmount,
     })
     .from(openingBalanceModel)
-    .where(and(eq(openingBalanceModel.isParty, false), eq(openingBalanceModel.type, 'debit')))
-    .limit(1);
+    .where(
+      and(
+        eq(openingBalanceModel.isParty, false),
+        eq(openingBalanceModel.type, 'debit')
+      )
+    )
+    .limit(1)
 
-  let balance = opening ? opening[0].openingAmount : 0;
+  let balance = opening ? opening[0].openingAmount : 0
 
   // 2️⃣ Sum cash transactions before the date
   const txSum = await db
@@ -41,136 +53,176 @@ const opening = await db
       totalContra: sql<number>`COALESCE(SUM(CASE WHEN ${transactionModel.transactionType} = 'contra' THEN ${transactionModel.amount} ELSE 0 END), 0)`,
     })
     .from(transactionModel)
-    .where(and(eq(transactionModel.isCash, true), lte(transactionModel.transactionDate, new Date(date))))
-    .limit(1);
+    .where(
+      and(
+        eq(transactionModel.isCash, true),
+        lte(transactionModel.transactionDate, new Date(date))
+      )
+    )
+    .limit(1)
 
   // 3️⃣ Adjust balance based on transaction type
-    if (txSum.length) {
-    balance += txSum[0].totalReceived - txSum[0].totalPayment + txSum[0].totalContra;
+  if (txSum.length) {
+    balance +=
+      txSum[0].totalReceived - txSum[0].totalPayment + txSum[0].totalContra
   }
 
   const result: CashReportRow[] = [
     {
+      id: Date.now(),
       date,
-      particular: closingFlag ? 'Closing Balance' :'Opening Balance' ,
+      particular: closingFlag ? 'Closing Balance' : 'Opening Balance',
       amount: balance,
     },
   ]
-  return result;
-};
-export const getCustomerOpeningBalance = async ({ date,closingFlag,partyId }: GetPartyOpeningBalanceParams) => {
-  // 1️⃣ Get opening cash balance (assuming isParty = false means cash)
-
-const opening = await db
-    .select({
-      openingAmount: openingBalanceModel.openingAmount,
-    })
-    .from(openingBalanceModel)
-    .where(and(eq(openingBalanceModel.isParty, true), eq(openingBalanceModel.customerId, partyId)))
-    .limit(1);
-
-  let balance = opening ? opening[0].openingAmount : 0;
-
-  // 2️⃣ Sum cash transactions before the date
-  const txSum = await db
-    .select({
-          totalAmount: sql<number>`SUM(${salesTransactionModel.amount})`, 
-    })
-    .from(salesTransactionModel)
-    .where(and(eq(salesTransactionModel.customerId,partyId), lte(salesTransactionModel.transactionDate, new Date(date))))
-    
-
-  // 3️⃣ Adjust balance based on transaction type
-    if (txSum.length) {
-    balance =balance + Number(txSum[0].totalAmount)
-  }
-
-  const result: CashReportRow[] = [
-    {
-      date,
-      particular: closingFlag ? 'Closing Balance' :'Opening Balance' ,
-      amount: balance,
-    },
-  ]
-  return result;
-};
+  return result
+}
 
 export const getCashReport = async (startDate: string, endDate: string) => {
-  console.log(startDate);
-  console.log(endDate);
-  const startDateParam: GetCashOpeningBalanceParams = { date: startDate,closingFlag:false };
+  console.log(startDate)
+  console.log(endDate)
+  const startDateParam: GetCashOpeningBalanceParams = {
+    date: startDate,
+    closingFlag: false,
+  }
 
-// Make sure to await the function
-const openingBalanceRows = await getCashOpeningBalance(startDateParam);
+  // Make sure to await the function
+  const openingBalanceRows = await getCashOpeningBalance(startDateParam)
 
-const query = sql`SELECT
-
-    transaction_date as date,
-
-    amount,
-
+  const query = sql`
+  SELECT
+    t.transaction_id AS id,      -- ✅ use existing database ID
+    t.transaction_date AS date,
+    t.amount,
     CASE
         WHEN t.transaction_type = 'received' THEN CONCAT('Received From ', c.name)
         WHEN t.transaction_type = 'payment' THEN CONCAT('Payment To ', v.name)
         ELSE NULL
-        END AS particular
-FROM clothmgt.transaction t
-LEFT JOIN clothmgt.customer c ON t.customer_id = c.customer_id
-LEFT JOIN clothmgt.vendor v ON t.vendor_id = v.vendor_id
-WHERE is_cash = 1 and t.transaction_date between ${startDate} and ${endDate}`
+    END AS particular
+  FROM \`transaction\` t
+  LEFT JOIN \`customer\` c ON t.customer_id = c.customer_id
+  LEFT JOIN \`vendor\` v ON t.vendor_id = v.vendor_id
+  WHERE t.is_cash = 1 AND t.transaction_date BETWEEN ${startDate} AND ${endDate};
+`
 
+  const [rows] = await db.execute<CashReportRow[]>(query)
+  const transactionRows: CashReportRow[] = rows as unknown as CashReportRow[]
+  const endDateObj = new Date(endDate)
+  endDateObj.setDate(endDateObj.getDate() + 1)
+  const closingDateStr = endDateObj.toISOString().split('T')[0] // 'YYYY-MM-DD'
 
-    
-
-   const [rows] = await db.execute<CashReportRow[]>(query);
-   const transactionRows:CashReportRow[]=rows as unknown as CashReportRow[];
-    const endDateObj = new Date(endDate);
-  endDateObj.setDate(endDateObj.getDate() + 1);
-  const closingDateStr = endDateObj.toISOString().split('T')[0]; // 'YYYY-MM-DD'
-
-  const endDateParam: GetCashOpeningBalanceParams = { date: closingDateStr,closingFlag:true };
+  const endDateParam: GetCashOpeningBalanceParams = {
+    date: closingDateStr,
+    closingFlag: true,
+  }
   const closingBalanceRows = await getCashOpeningBalance(endDateParam)
-   const cashReport: CashReportRow[] = [
+  const cashReport: CashReportRow[] = [
     ...openingBalanceRows,
     ...transactionRows,
-    ...closingBalanceRows
-  ];
+    ...closingBalanceRows,
+  ]
 
+  return cashReport
+}
 
-  return cashReport;
-};
+//customer report
+export const getCustomerOpeningBalance = async ({
+  date,
+  closingFlag,
+  partyId,
+}: GetPartyOpeningBalanceParams) => {
+  // 1️⃣ Get opening balance for the customer
+  const opening = await db
+    .select({
+      openingAmount: openingBalanceModel.openingAmount,
+    })
+    .from(openingBalanceModel)
+    .where(
+      and(
+        eq(openingBalanceModel.isParty, true),
+        eq(openingBalanceModel.customerId, partyId)
+      )
+    )
+    .limit(1)
 
-export const getCustomerReport = async (startDate: string, endDate: string,partyId:number) => {
+  // Safely handle missing opening balance row
+  let balance =
+    opening.length > 0 && opening[0]?.openingAmount
+      ? Number(opening[0].openingAmount)
+      : 0
 
-  const startDateParam: GetPartyOpeningBalanceParams = { date: startDate,closingFlag:false,partyId:partyId };
+  // 2️⃣ Sum transactions before the given date
+  const txSum = await db
+    .select({
+      totalAmount: sql<number>`SUM(${salesTransactionModel.amount})`,
+    })
+    .from(salesTransactionModel)
+    .where(
+      and(
+        eq(salesTransactionModel.customerId, partyId),
+        lte(salesTransactionModel.transactionDate, new Date(date))
+      )
+    )
 
-// Make sure to await the function
-const openingBalanceRows = await getCustomerOpeningBalance(startDateParam);
+  // 3️⃣ Adjust balance if there are transactions
+  if (txSum.length && txSum[0].totalAmount !== null) {
+    balance += Number(txSum[0].totalAmount)
+  }
 
-const query = sql`SELECT
+  // 4️⃣ Return formatted result
+  const result: CashReportRow[] = [
+    {
+      id: Date.now(),
+      date,
+      particular: closingFlag ? 'Closing Balance' : 'Opening Balance',
+      amount: balance,
+    },
+  ]
 
-    transaction_date as date,
+  return result
+}
+
+export const getCustomerReport = async (
+  startDate: string,
+  endDate: string,
+  partyId: number
+) => {
+  const startDateParam: GetPartyOpeningBalanceParams = {
+    date: startDate,
+    closingFlag: false,
+    partyId: partyId,
+  }
+
+  // Make sure to await the function
+  const openingBalanceRows = await getCustomerOpeningBalance(startDateParam)
+
+const query = sql`
+  SELECT
+    t.transaction_id AS id,
+    transaction_date AS date,
     amount,
-	t.reference_type AS particular
-FROM clothmgt.sales_transaction t where t.customer_id = ${partyId} and t.transaction_date between ${startDate} and ${endDate}`
+    t.reference_type AS particular
+  FROM sales_transaction t
+  WHERE t.customer_id = ${partyId}
+  AND t.transaction_date BETWEEN ${startDate} AND ${endDate}
+`
+  const [rows] = await db.execute<CashReportRow[]>(query)
+  const transactionRows: CashReportRow[] = rows as unknown as CashReportRow[]
+  const endDateObj = new Date(endDate)
+  endDateObj.setDate(endDateObj.getDate() + 1)
+  const closingDateStr = endDateObj.toISOString().split('T')[0] // 'YYYY-MM-DD'
 
-
-    
-
-   const [rows] = await db.execute<CashReportRow[]>(query);
-   const transactionRows:CashReportRow[]=rows as unknown as CashReportRow[];
-    const endDateObj = new Date(endDate);
-  endDateObj.setDate(endDateObj.getDate() + 1);
-  const closingDateStr = endDateObj.toISOString().split('T')[0]; // 'YYYY-MM-DD'
-
-  const endDateParam: GetPartyOpeningBalanceParams = { date: closingDateStr,closingFlag:true,partyId:partyId };
+  const endDateParam: GetPartyOpeningBalanceParams = {
+    date: closingDateStr,
+    closingFlag: true,
+    partyId: partyId,
+  }
   const closingBalanceRows = await getCustomerOpeningBalance(endDateParam)
-   const cashReport: CashReportRow[] = [
+  const cashReport: CashReportRow[] = [
     ...openingBalanceRows,
     ...transactionRows,
-    ...closingBalanceRows
-  ];
+    ...closingBalanceRows,
+  ]
 
-
-  return cashReport;
-};
+  return cashReport
+}
