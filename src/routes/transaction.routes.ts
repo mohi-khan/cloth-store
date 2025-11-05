@@ -12,6 +12,6 @@ const router = Router();
 router.post("/create", authenticateUser, createTransactionController);
 router.get("/getAll", authenticateUser, getAllTransactionsController);
 router.get("/getById/:id", authenticateUser, getTransactionController);
-router.patch("/edit/:id", authenticateUser, editTransactionController);
+router.patch("/edit/:createdAt", authenticateUser, editTransactionController);
 
 export default router;

@@ -23,7 +23,9 @@ const createTransactionSchema = createInsertSchema(transactionModel).omit({
   transactionDate: dateStringToDate,
 })
 
-const editTransactionSchema = createTransactionSchema.partial()
+const editTransactionSchema = createTransactionSchema.partial().extend({
+  transactionDate: dateStringToDate,
+})
 
 export const createTransactionController = async (
   req: Request,
@@ -81,12 +83,20 @@ export const editTransactionController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'edit_transaction')
-    const id = Number(req.params.id)
-    const transactionData = editTransactionSchema.parse(req.body)
-    const item = await editTransaction(id, transactionData)
+    const createdAtParam = req.params.createdAt
+    if (!createdAtParam) {
+      throw new Error('createdAt parameter is required')
+    }
 
-    res.status(200).json(item)
+    // Expect an array of objects
+    const transactionsData = editTransactionSchema.array().parse(req.body)
+
+    const updatedTransactions = await editTransaction(createdAtParam, transactionsData)
+
+    res.status(200).json({
+      message: 'Transactions updated successfully',
+      data: updatedTransactions,
+    })
   } catch (error) {
     next(error)
   }
