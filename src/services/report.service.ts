@@ -9,6 +9,7 @@ interface GetCashOpeningBalanceParams {
   closingFlag:boolean;
 }
 interface CashReportRow {
+  id: number;
   date: string;
   particular: string;
   amount: number;
@@ -45,6 +46,7 @@ const opening = await db
 
   const result: CashReportRow[] = [
     {
+      id: Date.now(),
       date,
       particular: closingFlag ? 'Closing Balance' :'Opening Balance' ,
       amount: balance,
@@ -61,24 +63,22 @@ export const getCashReport = async (startDate: string, endDate: string) => {
 // Make sure to await the function
 const openingBalanceRows = await getCashOpeningBalance(startDateParam);
 
-const query = sql`SELECT
-
-    transaction_date as date,
-
-    amount,
-
+const query = sql`
+  SELECT
+    t.transaction_id AS id,      -- ✅ use existing database ID
+    t.transaction_date AS date,
+    t.amount,
     CASE
         WHEN t.transaction_type = 'received' THEN CONCAT('Received From ', c.name)
         WHEN t.transaction_type = 'payment' THEN CONCAT('Payment To ', v.name)
         ELSE NULL
-        END AS particular
-FROM clothmgt.transaction t
-LEFT JOIN clothmgt.customer c ON t.customer_id = c.customer_id
-LEFT JOIN clothmgt.vendor v ON t.vendor_id = v.vendor_id
-WHERE is_cash = 1 and t.transaction_date between ${startDate} and ${endDate}`
-
-
-    
+    END AS particular
+  FROM \`transaction\` t
+  LEFT JOIN \`customer\` c ON t.customer_id = c.customer_id
+  LEFT JOIN \`vendor\` v ON t.vendor_id = v.vendor_id
+  WHERE t.is_cash = 1 AND t.transaction_date BETWEEN ${startDate} AND ${endDate};
+`;
+   
 
    const [rows] = await db.execute<CashReportRow[]>(query);
    const transactionRows:CashReportRow[]=rows as unknown as CashReportRow[];
