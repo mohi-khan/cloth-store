@@ -1,6 +1,6 @@
 import { db } from "../config/database";
-import { and, eq, lte, sql } from "drizzle-orm";
-import { openingBalanceModel, transactionModel } from "../schemas";
+import { and, eq, isNotNull, lte, sql } from "drizzle-orm";
+import { openingBalanceModel, salesTransactionModel, transactionModel } from "../schemas";
 
 
 
@@ -8,8 +8,13 @@ interface GetCashOpeningBalanceParams {
   date: string, // 'YYYY-MM-DD'
   closingFlag:boolean;
 }
+
+interface GetPartyOpeningBalanceParams {
+  date: string, // 'YYYY-MM-DD'
+  closingFlag:boolean;
+  partyId:number;
+}
 interface CashReportRow {
-  id: number;
   date: string;
   particular: string;
   amount: number;
@@ -46,7 +51,42 @@ const opening = await db
 
   const result: CashReportRow[] = [
     {
-      id: Date.now(),
+      date,
+      particular: closingFlag ? 'Closing Balance' :'Opening Balance' ,
+      amount: balance,
+    },
+  ]
+  return result;
+};
+export const getCustomerOpeningBalance = async ({ date,closingFlag,partyId }: GetPartyOpeningBalanceParams) => {
+  // 1️⃣ Get opening cash balance (assuming isParty = false means cash)
+
+const opening = await db
+    .select({
+      openingAmount: openingBalanceModel.openingAmount,
+    })
+    .from(openingBalanceModel)
+    .where(and(eq(openingBalanceModel.isParty, true), eq(openingBalanceModel.customerId, partyId)))
+    .limit(1);
+
+  let balance = opening ? opening[0].openingAmount : 0;
+
+  // 2️⃣ Sum cash transactions before the date
+  const txSum = await db
+    .select({
+          totalAmount: sql<number>`SUM(${salesTransactionModel.amount})`, 
+    })
+    .from(salesTransactionModel)
+    .where(and(eq(salesTransactionModel.customerId,partyId), lte(salesTransactionModel.transactionDate, new Date(date))))
+    
+
+  // 3️⃣ Adjust balance based on transaction type
+    if (txSum.length) {
+    balance =balance + Number(txSum[0].totalAmount)
+  }
+
+  const result: CashReportRow[] = [
+    {
       date,
       particular: closingFlag ? 'Closing Balance' :'Opening Balance' ,
       amount: balance,
@@ -63,22 +103,24 @@ export const getCashReport = async (startDate: string, endDate: string) => {
 // Make sure to await the function
 const openingBalanceRows = await getCashOpeningBalance(startDateParam);
 
-const query = sql`
-  SELECT
-    t.transaction_id AS id,      -- ✅ use existing database ID
-    t.transaction_date AS date,
-    t.amount,
+const query = sql`SELECT
+
+    transaction_date as date,
+
+    amount,
+
     CASE
         WHEN t.transaction_type = 'received' THEN CONCAT('Received From ', c.name)
         WHEN t.transaction_type = 'payment' THEN CONCAT('Payment To ', v.name)
         ELSE NULL
-    END AS particular
-  FROM \`transaction\` t
-  LEFT JOIN \`customer\` c ON t.customer_id = c.customer_id
-  LEFT JOIN \`vendor\` v ON t.vendor_id = v.vendor_id
-  WHERE t.is_cash = 1 AND t.transaction_date BETWEEN ${startDate} AND ${endDate};
-`;
-   
+        END AS particular
+FROM clothmgt.transaction t
+LEFT JOIN clothmgt.customer c ON t.customer_id = c.customer_id
+LEFT JOIN clothmgt.vendor v ON t.vendor_id = v.vendor_id
+WHERE is_cash = 1 and t.transaction_date between ${startDate} and ${endDate}`
+
+
+    
 
    const [rows] = await db.execute<CashReportRow[]>(query);
    const transactionRows:CashReportRow[]=rows as unknown as CashReportRow[];
@@ -88,6 +130,41 @@ const query = sql`
 
   const endDateParam: GetCashOpeningBalanceParams = { date: closingDateStr,closingFlag:true };
   const closingBalanceRows = await getCashOpeningBalance(endDateParam)
+   const cashReport: CashReportRow[] = [
+    ...openingBalanceRows,
+    ...transactionRows,
+    ...closingBalanceRows
+  ];
+
+
+  return cashReport;
+};
+
+export const getCustomerReport = async (startDate: string, endDate: string,partyId:number) => {
+
+  const startDateParam: GetPartyOpeningBalanceParams = { date: startDate,closingFlag:false,partyId:partyId };
+
+// Make sure to await the function
+const openingBalanceRows = await getCustomerOpeningBalance(startDateParam);
+
+const query = sql`SELECT
+
+    transaction_date as date,
+    amount,
+	t.reference_type AS particular
+FROM clothmgt.sales_transaction t where t.customer_id = ${partyId} and t.transaction_date between ${startDate} and ${endDate}`
+
+
+    
+
+   const [rows] = await db.execute<CashReportRow[]>(query);
+   const transactionRows:CashReportRow[]=rows as unknown as CashReportRow[];
+    const endDateObj = new Date(endDate);
+  endDateObj.setDate(endDateObj.getDate() + 1);
+  const closingDateStr = endDateObj.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+
+  const endDateParam: GetPartyOpeningBalanceParams = { date: closingDateStr,closingFlag:true,partyId:partyId };
+  const closingBalanceRows = await getCustomerOpeningBalance(endDateParam)
    const cashReport: CashReportRow[] = [
     ...openingBalanceRows,
     ...transactionRows,

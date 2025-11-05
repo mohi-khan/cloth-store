@@ -7,8 +7,8 @@ export const getItemSummary = async () => {
       i.item_name,
       SUM(s.quantity) AS totQty,
       AVG(i.avg_price) AS price
-    FROM \`cloth-store\`.store_transaction AS s
-    JOIN \`cloth-store\`.item AS i
+    FROM store_transaction AS s
+    JOIN item AS i
       ON i.item_id = s.item_id
     GROUP BY i.item_id, i.item_name;
   `)
