@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { db } from '../config/database'
 import {
   transactionModel,
@@ -92,25 +92,34 @@ export const editTransaction = async (
   createdAt: string,
   transactionsData: Partial<NewTransaction>[]
 ) => {
-  const createdAtDate = new Date(createdAt)
-
-  const results = []
+  console.log("🚀 ~ editTransaction ~ transactionsData:", transactionsData)
+  const createdAtDate = new Date(createdAt);
+  const results = [];
 
   for (const transactionData of transactionsData) {
+    if (!transactionData.transactionId) {
+      throw BadRequestError("transactionId is required for each transaction");
+    }
+
     const updated = await db
       .update(transactionModel)
       .set(transactionData)
-      .where(eq(transactionModel.createdAt, createdAtDate))
-      .execute()
+      .where(
+        and(
+          eq(transactionModel.createdAt, createdAtDate),
+          eq(transactionModel.transactionId, transactionData.transactionId)
+        )
+      )
+      .execute();
 
     if (updated.length > 0) {
-      results.push(...updated)
+      results.push(...updated);
     }
   }
 
   if (results.length === 0) {
-    throw BadRequestError('No transactions found for the given createdAt timestamp')
+    throw BadRequestError("No transactions found for the given createdAt timestamp");
   }
 
-  return results
-}
+  return results;
+};
