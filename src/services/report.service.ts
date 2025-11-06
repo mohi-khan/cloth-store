@@ -23,6 +23,15 @@ interface CashReportRow {
   amount: number
 }
 
+type StockLedgerRow = {
+  transaction_date: string
+  reference_type: string
+  quantity: number
+  balance: number
+  reference: string
+}
+type StockLedgerResult = StockLedgerRow & { id: number }
+
 //cash report
 export const getCashOpeningBalance = async ({
   date,
@@ -231,70 +240,67 @@ export const getStockLedger = async (
   itemId: number,
   startDate: string,
   endDate: string
-) => {
-  console.log('que', itemId, startDate, endDate);
+): Promise<StockLedgerResult[]> => {
+  console.log('que', itemId, startDate, endDate)
 
-  const [rows] = await db.execute(sql`
-    WITH combined AS (
-      SELECT 
-        UNIX_TIMESTAMP(DATE_SUB(${startDate}, INTERVAL 1 SECOND)) AS transaction_id,
-        i.item_id,
-        i.item_name,
-        'Opening Stock' AS reference_type,
-        NULL AS reference,
-        SUM(st.quantity) AS quantity,
-        DATE_SUB(${startDate}, INTERVAL 1 DAY) AS transaction_date,
-        0 AS sort_order
-      FROM store_transaction st
-      INNER JOIN item i ON i.item_id = st.item_id
-      WHERE st.item_id = ${itemId} 
-        AND st.transaction_date < ${startDate}
-
-      UNION ALL
-
+  // Explicitly cast the result to an array of rows
+  const result = (await db.execute(sql`
+    WITH opening_stock AS (
       SELECT
-        st.transaction_id,
-        i.item_id,
-        i.item_name,
-        st.reference_type,
-        st.reference,
-        st.quantity,
-        st.transaction_date,
-        st.transaction_id AS sort_order
-      FROM store_transaction st
-      INNER JOIN item i ON i.item_id = st.item_id
-      WHERE st.item_id = ${itemId} 
-        AND st.transaction_date BETWEEN ${startDate} AND ${endDate}
-
+          ${startDate} AS transaction_date,
+          'Opening Stock' AS reference_type,
+          IFNULL(SUM(quantity),0) AS quantity,
+          0 AS reference,
+          0 AS sort_order
+      FROM store_transaction
+      WHERE item_id = ${itemId}
+        AND transaction_date < ${startDate}
+    ),
+    item_transactions AS (
+      SELECT
+          transaction_date,
+          reference_type,
+          IFNULL(quantity,0) AS quantity,
+          IFNULL(reference, 0) AS reference,
+          transaction_id AS sort_order
+      FROM store_transaction
+      WHERE item_id = ${itemId}
+        AND transaction_date BETWEEN ${startDate} AND ${endDate}
+    ),
+    combined AS (
+      SELECT * FROM opening_stock
       UNION ALL
-
-      SELECT 
-        UNIX_TIMESTAMP(${endDate} + INTERVAL 1 SECOND) AS transaction_id,
-        i.item_id,
-        i.item_name,
-        'Closing Stock' AS reference_type,
-        NULL AS reference,
-        SUM(st.quantity) AS quantity,
-        ${endDate} AS transaction_date,
-        999999 AS sort_order
-      FROM store_transaction st
-      INNER JOIN item i ON i.item_id = st.item_id
-      WHERE st.item_id = ${itemId} 
-        AND st.transaction_date <= ${endDate}
+      SELECT * FROM item_transactions
     )
     SELECT
-      transaction_id,
-      item_id,
-      item_name,
-      reference_type,
-      reference,
-      quantity,
-      transaction_date,
-      SUM(quantity) OVER (ORDER BY transaction_date, sort_order ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS balance
+        transaction_date,
+        reference_type,
+        quantity,
+        SUM(quantity) OVER (ORDER BY transaction_date, sort_order ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS balance,
+        reference
     FROM combined
     ORDER BY transaction_date, sort_order;
-  `);
+  `)) as unknown as [StockLedgerRow[], unknown]
 
-  return rows;
-};
+  const rows = result[0] // ✅ guaranteed to be an array of rows
 
+  let updatedRows: StockLedgerResult[] = rows.map((row) => ({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    ...row,
+  }))
+
+  if (rows.length > 0) {
+    const lastElement = rows[rows.length - 1]
+
+    updatedRows.push({
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      transaction_date: endDate,
+      reference_type: 'Closing Stock',
+      quantity: lastElement.balance,
+      balance: lastElement.balance,
+      reference: "0",
+    })
+  }
+
+  return updatedRows
+}
