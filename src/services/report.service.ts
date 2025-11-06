@@ -23,6 +23,15 @@ interface CashReportRow {
   amount: number
 }
 
+type StockLedgerRow = {
+  transaction_date: string
+  reference_type: string
+  quantity: number
+  balance: number
+  reference: string
+}
+type StockLedgerResult = StockLedgerRow & { id: number }
+
 //cash report
 export const getCashOpeningBalance = async ({
   date,
@@ -196,7 +205,7 @@ export const getCustomerReport = async (
   // Make sure to await the function
   const openingBalanceRows = await getCustomerOpeningBalance(startDateParam)
 
-const query = sql`
+  const query = sql`
   SELECT
     t.transaction_id AS id,
     transaction_date AS date,
@@ -225,4 +234,73 @@ const query = sql`
   ]
 
   return cashReport
+}
+
+export const getStockLedger = async (
+  itemId: number,
+  startDate: string,
+  endDate: string
+): Promise<StockLedgerResult[]> => {
+  console.log('que', itemId, startDate, endDate)
+
+  // Explicitly cast the result to an array of rows
+  const result = (await db.execute(sql`
+    WITH opening_stock AS (
+      SELECT
+          ${startDate} AS transaction_date,
+          'Opening Stock' AS reference_type,
+          IFNULL(SUM(quantity),0) AS quantity,
+          0 AS reference,
+          0 AS sort_order
+      FROM store_transaction
+      WHERE item_id = ${itemId}
+        AND transaction_date < ${startDate}
+    ),
+    item_transactions AS (
+      SELECT
+          transaction_date,
+          reference_type,
+          IFNULL(quantity,0) AS quantity,
+          IFNULL(reference, 0) AS reference,
+          transaction_id AS sort_order
+      FROM store_transaction
+      WHERE item_id = ${itemId}
+        AND transaction_date BETWEEN ${startDate} AND ${endDate}
+    ),
+    combined AS (
+      SELECT * FROM opening_stock
+      UNION ALL
+      SELECT * FROM item_transactions
+    )
+    SELECT
+        transaction_date,
+        reference_type,
+        quantity,
+        SUM(quantity) OVER (ORDER BY transaction_date, sort_order ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS balance,
+        reference
+    FROM combined
+    ORDER BY transaction_date, sort_order;
+  `)) as unknown as [StockLedgerRow[], unknown]
+
+  const rows = result[0] // ✅ guaranteed to be an array of rows
+
+  let updatedRows: StockLedgerResult[] = rows.map((row) => ({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    ...row,
+  }))
+
+  if (rows.length > 0) {
+    const lastElement = rows[rows.length - 1]
+
+    updatedRows.push({
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      transaction_date: endDate,
+      reference_type: 'Closing Stock',
+      quantity: lastElement.balance,
+      balance: lastElement.balance,
+      reference: "0",
+    })
+  }
+
+  return updatedRows
 }

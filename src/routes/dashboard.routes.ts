@@ -1,5 +1,5 @@
 import express from 'express'
-import { getCashInHandController, getItemSummaryController, getRemainingAmountController } from '../controllers/dashboard.controller'
+import { getCashInHandController, getItemSummaryController, getProfitSummaryController, getRemainingAmountController } from '../controllers/dashboard.controller'
 import { authenticateUser } from '../middlewares/auth.middleware'
 
 const router = express.Router()
@@ -7,5 +7,6 @@ const router = express.Router()
 router.get('/item-summary', authenticateUser, getItemSummaryController)
 router.get('/remaining-amount', authenticateUser, getRemainingAmountController)
 router.get('/cash-in-hand', authenticateUser, getCashInHandController)
+router.get('/profit-summary', authenticateUser, getProfitSummaryController)
 
 export default router

@@ -65,3 +65,22 @@ transaction WHERE transaction_type='payment' AND is_cash=1) AS t1 ;
 
   return rows
 }
+
+export const getProfitSummary = async () => {
+  const [rows] = await db.execute(sql`
+    SELECT
+      ROW_NUMBER() OVER (ORDER BY MIN(sales_master.sale_date)) AS id,
+      DATE_FORMAT(sales_master.sale_date, '%M %Y') AS month,
+      COUNT(DISTINCT sales_master.sale_master_id) AS number_of_sales,
+      SUM(sales_details.amount) AS total_sales_amount,
+      SUM((sales_details.unit_price - sales_details.avg_price) * sales_details.quantity)
+        - SUM(sales_master.discount_amount) AS net_profit
+    FROM sales_details
+    INNER JOIN item ON item.item_id = sales_details.item_id
+    INNER JOIN sales_master ON sales_master.sale_master_id = sales_details.sale_master_id
+    WHERE sales_master.sale_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+    GROUP BY DATE_FORMAT(sales_master.sale_date, '%M %Y')
+    ORDER BY MIN(sales_master.sale_date);
+  `)
+  return rows
+}

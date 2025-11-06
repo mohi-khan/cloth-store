@@ -11,20 +11,24 @@ import {
 import { z } from 'zod'
 
 const dateStringToDate = z.preprocess(
-  (arg) => (typeof arg === "string" || arg instanceof Date ? new Date(arg) : undefined),
+  (arg) =>
+    typeof arg === 'string' || arg instanceof Date ? new Date(arg) : undefined,
   z.date()
-);
+)
 
 // Schema validation
-const createTransactionSchema = createInsertSchema(transactionModel).omit({
-  transactionId: true,
-  createdAt: true,
-}).extend({
-  transactionDate: dateStringToDate,
-})
+const createTransactionSchema = createInsertSchema(transactionModel)
+  .omit({
+    transactionId: true,
+    createdAt: true,
+  })
+  .extend({
+    transactionDate: dateStringToDate,
+  })
 
-const editTransactionSchema = createTransactionSchema.partial().extend({
+const editTransactionSchema = createInsertSchema(transactionModel).partial().extend({
   transactionDate: dateStringToDate,
+  createdAt: dateStringToDate,
 })
 
 export const createTransactionController = async (
@@ -84,14 +88,13 @@ export const editTransactionController = async (
 ) => {
   try {
     const createdAtParam = req.params.createdAt
-    if (!createdAtParam) {
-      throw new Error('createdAt parameter is required')
-    }
+    if (!createdAtParam) throw new Error('createdAt parameter is required')
 
-    // Expect an array of objects
     const transactionsData = editTransactionSchema.array().parse(req.body)
-
-    const updatedTransactions = await editTransaction(createdAtParam, transactionsData)
+    const updatedTransactions = await editTransaction(
+      createdAtParam,
+      transactionsData
+    )
 
     res.status(200).json({
       message: 'Transactions updated successfully',
