@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { getCashReport, getCustomerReport } from '../services/report.service'
+import { getCashReport, getCustomerReport, getStockLedger } from '../services/report.service'
 
 export const getCashReportController = async (req: Request, res: Response) => {
   try {
@@ -32,3 +32,21 @@ const parsedPartyId = partyId ? Number(partyId) : 0;
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
+
+export const getStockLedgerController = async (req: Request, res: Response) => {
+  try {
+    const itemId = Number(req.query.itemId);
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
+
+    if (!itemId || !startDate || !endDate) {
+      res.status(400).json({ message: "itemId, startDate and endDate are required" });
+    }
+
+    const ledger = await getStockLedger(itemId, startDate, endDate);
+    res.json(ledger);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};

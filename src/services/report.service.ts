@@ -196,7 +196,7 @@ export const getCustomerReport = async (
   // Make sure to await the function
   const openingBalanceRows = await getCustomerOpeningBalance(startDateParam)
 
-const query = sql`
+  const query = sql`
   SELECT
     t.transaction_id AS id,
     transaction_date AS date,
@@ -226,3 +226,75 @@ const query = sql`
 
   return cashReport
 }
+
+export const getStockLedger = async (
+  itemId: number,
+  startDate: string,
+  endDate: string
+) => {
+  console.log('que', itemId, startDate, endDate);
+
+  const [rows] = await db.execute(sql`
+    WITH combined AS (
+      SELECT 
+        UNIX_TIMESTAMP(DATE_SUB(${startDate}, INTERVAL 1 SECOND)) AS transaction_id,
+        i.item_id,
+        i.item_name,
+        'Opening Stock' AS reference_type,
+        NULL AS reference,
+        SUM(st.quantity) AS quantity,
+        DATE_SUB(${startDate}, INTERVAL 1 DAY) AS transaction_date,
+        0 AS sort_order
+      FROM store_transaction st
+      INNER JOIN item i ON i.item_id = st.item_id
+      WHERE st.item_id = ${itemId} 
+        AND st.transaction_date < ${startDate}
+
+      UNION ALL
+
+      SELECT
+        st.transaction_id,
+        i.item_id,
+        i.item_name,
+        st.reference_type,
+        st.reference,
+        st.quantity,
+        st.transaction_date,
+        st.transaction_id AS sort_order
+      FROM store_transaction st
+      INNER JOIN item i ON i.item_id = st.item_id
+      WHERE st.item_id = ${itemId} 
+        AND st.transaction_date BETWEEN ${startDate} AND ${endDate}
+
+      UNION ALL
+
+      SELECT 
+        UNIX_TIMESTAMP(${endDate} + INTERVAL 1 SECOND) AS transaction_id,
+        i.item_id,
+        i.item_name,
+        'Closing Stock' AS reference_type,
+        NULL AS reference,
+        SUM(st.quantity) AS quantity,
+        ${endDate} AS transaction_date,
+        999999 AS sort_order
+      FROM store_transaction st
+      INNER JOIN item i ON i.item_id = st.item_id
+      WHERE st.item_id = ${itemId} 
+        AND st.transaction_date <= ${endDate}
+    )
+    SELECT
+      transaction_id,
+      item_id,
+      item_name,
+      reference_type,
+      reference,
+      quantity,
+      transaction_date,
+      SUM(quantity) OVER (ORDER BY transaction_date, sort_order ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS balance
+    FROM combined
+    ORDER BY transaction_date, sort_order;
+  `);
+
+  return rows;
+};
+
