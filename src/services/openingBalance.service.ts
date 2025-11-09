@@ -5,6 +5,7 @@ import {
   NewOpeningBalance,
   bankAccountModel,
   salesTransactionModel,
+  customerModel,
 } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 import { MySqlTableWithColumns, MySqlColumn } from 'drizzle-orm/mysql-core'
@@ -42,7 +43,36 @@ export const createOpeningBalance = async (
 
 // Get All
 export const getAllOpeningBalances = async () => {
-  return await db.select().from(openingBalanceModel)
+  const result = await db
+    .select({
+      openingBalanceId: openingBalanceModel.openingBalanceId,
+      openingAmount: openingBalanceModel.openingAmount,
+      isParty: openingBalanceModel.isParty,
+      customerId: openingBalanceModel.customerId,
+      bankAccountId: openingBalanceModel.bankAccountId,
+      type: openingBalanceModel.type,
+      createdBy: openingBalanceModel.createdBy,
+      createdAt: openingBalanceModel.createdAt,
+      updatedBy: openingBalanceModel.updatedBy,
+      updatedAt: openingBalanceModel.updatedAt,
+
+      // Joined fields
+      customerName: customerModel.name,
+      bankName: bankAccountModel.bankName,
+      branch: bankAccountModel.branch,
+      accountNumber: bankAccountModel.accountNumber,
+    })
+    .from(openingBalanceModel)
+    .leftJoin(
+      customerModel,
+      eq(openingBalanceModel.customerId, customerModel.customerId)
+    )
+    .leftJoin(
+      bankAccountModel,
+      eq(openingBalanceModel.bankAccountId, bankAccountModel.bankAccountId)
+    )
+
+  return result
 }
 
 // Get By Id
