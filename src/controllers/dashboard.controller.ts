@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import {
+  getBankBalanceSummary,
   getCashInHand,
   getItemSummary,
   getProfitSummary,
@@ -69,6 +70,19 @@ export const getProfitSummaryController = async (
     res.status(200).json(data)
   } catch (error) {
     console.error('Error fetching profit summary:', error)
+    res.status(500).json({ success: false, message: 'Internal Server Error' })
+  }
+}
+
+export const getBankBalanceSummaryController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const data = await getBankBalanceSummary()
+    res.status(200).json(data)
+  } catch (error) {
+    console.error('Error fetching bank account balance summary:', error)
     res.status(500).json({ success: false, message: 'Internal Server Error' })
   }
 }
