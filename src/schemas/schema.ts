@@ -321,6 +321,9 @@ export const openingBalanceModel = mysqlTable('opening_balance', {
   customerId: int('customer_id').references(() => customerModel.customerId, {
     onDelete: 'set null',
   }),
+  bankAccountId: int('bank_account_id').references(() => bankAccountModel.bankAccountId, {
+    onDelete: 'set null',
+  }),
   type: mysqlEnum('type', ['debit', 'credit']).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
