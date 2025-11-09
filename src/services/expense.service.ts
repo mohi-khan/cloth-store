@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../config/database'
-import { accountHeadModel, bankAccountModel, expenseModel, NewExpense, vendorModel } from '../schemas'
+import { accountHeadModel, bankAccountModel, expenseModel, NewExpense, transactionModel, vendorModel } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 
 // Create
@@ -13,6 +13,17 @@ export const createExpense = async (
       createdAt: new Date(),
     })
     console.log("🚀 ~ createExpense ~ expenseData:", expenseData)
+
+    await db.insert(transactionModel).values({
+      transactionType: 'payment',
+      isCash: expenseData.paymentType === 'cash'? true : false,
+      bankId: expenseData.bankAccountId,
+      vendorId: expenseData.vendorId,
+      transactionDate: new Date(),
+      amount: expenseData.amount,
+      createdBy: expenseData.createdBy,
+      createdAt: new Date(),
+    })
 
     return newItem
   } catch (error) {
