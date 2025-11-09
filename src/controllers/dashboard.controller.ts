@@ -1,5 +1,11 @@
 import { Request, Response } from 'express'
-import { getCashInHand, getItemSummary, getProfitSummary, getRemainingAmount } from '../services/dashboard.service'
+import {
+  getCashInHand,
+  getItemSummary,
+  getProfitSummary,
+  getRemainingAmount,
+} from '../services/dashboard.service'
+import { getCashOpeningBalance } from '../services/report.service'
 
 export const getItemSummaryController = async (req: Request, res: Response) => {
   try {
@@ -11,7 +17,10 @@ export const getItemSummaryController = async (req: Request, res: Response) => {
   }
 }
 
-export const getRemainingAmountController = async (req: Request, res: Response) => {
+export const getRemainingAmountController = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const data = await getRemainingAmount()
     res.status(200).json(data)
@@ -21,17 +30,40 @@ export const getRemainingAmountController = async (req: Request, res: Response) 
   }
 }
 
+// export const getCashInHandController = async (req: Request, res: Response) => {
+//   try {
+//     const data = await getCashInHand()
+//     res.status(200).json(data)
+//   } catch (error) {
+//     console.error('Error fetching item summary:', error)
+//     res.status(500).json({ success: false, message: 'Internal Server Error' })
+//   }
+// }
+
 export const getCashInHandController = async (req: Request, res: Response) => {
   try {
-    const data = await getCashInHand()
-    res.status(200).json(data)
+    // Use today's date
+    const today = new Date().toISOString().split('T')[0] // "YYYY-MM-DD"
+
+    // closingFlag is fixed as false
+    const closingFlag = false
+
+    const data = await getCashOpeningBalance({
+      date: today,
+      closingFlag,
+    })
+
+    res.json(data)
   } catch (error) {
-    console.error('Error fetching item summary:', error)
-    res.status(500).json({ success: false, message: 'Internal Server Error' })
+    console.error('Error fetching cash report:', error)
+    res.status(500).json({ error: 'Internal Server Error' })
   }
 }
 
-export const getProfitSummaryController = async (req: Request, res: Response) => {
+export const getProfitSummaryController = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const data = await getProfitSummary()
     res.status(200).json(data)

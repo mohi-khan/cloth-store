@@ -16,6 +16,7 @@ export const getCashReportController = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
+
 export const getPartyReportController = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate,partyId } = req.query;
