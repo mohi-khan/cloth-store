@@ -84,3 +84,22 @@ export const getProfitSummary = async () => {
   `)
   return rows
 }
+
+export const getBankBalanceSummary = async () => {
+  const [rows] = await db.execute(sql`
+    SELECT t1.bank_name, SUM(t1.current_balance) AS current_balance FROM (
+SELECT bank_account.bank_name, SUM(IF(type='debit',opening_amount,-(opening_amount))) AS current_balance
+FROM opening_balance 
+INNER JOIN bank_account ON bank_account.bank_account_id = opening_balance.bank_account_id
+WHERE opening_balance.bank_account_id IS NOT NULL
+GROUP BY opening_balance.bank_account_id
+UNION
+SELECT bank_account.bank_name, IFNULL(SUM(amount),0) AS current_balance
+FROM transaction 
+INNER JOIN bank_account ON bank_account.bank_account_id = transaction.bank_id
+GROUP BY bank_account.bank_account_id) AS t1
+GROUP BY t1.bank_name
+HAVING current_balance > 0;
+  `)
+  return rows
+}
