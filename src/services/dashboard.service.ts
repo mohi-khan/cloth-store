@@ -91,7 +91,7 @@ export const getBankBalanceSummary = async () => {
 SELECT bank_account.bank_name, SUM(IF(type='debit',opening_amount,-(opening_amount))) AS current_balance
 FROM opening_balance 
 INNER JOIN bank_account ON bank_account.bank_account_id = opening_balance.bank_account_id
-WHERE opening_balance.bank_account_id != 0
+WHERE opening_balance.bank_account_id IS NOT NULL
 GROUP BY opening_balance.bank_account_id
 UNION
 SELECT bank_account.bank_name, IFNULL(SUM(amount),0) AS current_balance
