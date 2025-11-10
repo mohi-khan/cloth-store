@@ -8,11 +8,20 @@ import {
   getAllStoreTransactions,
   getStoreTransactionById,
 } from '../services/wastage.service'
+import { z } from 'zod'
+
+const dateStringToDate = z.preprocess(
+  (arg) =>
+    typeof arg === 'string' || arg instanceof Date ? new Date(arg) : undefined,
+  z.date()
+)
 
 // Schema validation
 const createStoreTransactionSchema = createInsertSchema(storeTransactionModel).omit({
   transactionId: true,
   createdAt: true,
+}).extend({
+  transactionDate: dateStringToDate
 })
 
 const editStoreTransactionSchema = createStoreTransactionSchema.partial()

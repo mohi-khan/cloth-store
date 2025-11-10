@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm'
 import { db } from '../config/database'
-import { storeTransactionModel, NewStoreTransaction } from '../schemas'
+import { storeTransactionModel, NewStoreTransaction, itemModel } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 
 // Create
@@ -10,6 +10,7 @@ export const createStoreTransaction = async (
   try {
     const [newStoreTransaction] = await db.insert(storeTransactionModel).values({
       ...storeTransactionData,
+      quantity: `-${storeTransactionData.quantity}`,
       createdAt: new Date(),
     })
 
@@ -21,7 +22,23 @@ export const createStoreTransaction = async (
 
 // Get All
 export const getAllStoreTransactions = async () => {
-  return await db.select().from(storeTransactionModel)
+  return await db
+    .select({
+      transactionId: storeTransactionModel.transactionId,
+      itemId: storeTransactionModel.itemId,
+      itemName: itemModel.itemName,
+      price: storeTransactionModel.price,
+      quantity: storeTransactionModel.quantity,
+      transactionDate: storeTransactionModel.transactionDate,
+      reference: storeTransactionModel.reference,
+      referenceType: storeTransactionModel.referenceType,
+      createdBy: storeTransactionModel.createdBy,
+      createdAt: storeTransactionModel.createdAt,
+      updatedBy: storeTransactionModel.updatedBy,
+      updatedAt: storeTransactionModel.updatedAt,
+    })
+    .from(storeTransactionModel)
+    .innerJoin(itemModel, eq(storeTransactionModel.itemId, itemModel.itemId))
 }
 
 // Get By Id
