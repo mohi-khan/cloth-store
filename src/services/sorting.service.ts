@@ -69,7 +69,7 @@ export const createSorting = async (
         await tx.insert(storeTransactionModel).values({
           itemId: purchase.itemId,
           quantity: String(`-${sortingData.totalQuantity}`),
-          price: item.avgPrice,
+          price: item.avgPrice || 0, 
           transactionDate: sortingData.sortingDate,
           reference: String(purchase.purchaseId),
           referenceType: 'purchase',
@@ -81,7 +81,7 @@ export const createSorting = async (
         await tx.insert(storeTransactionModel).values({
           itemId: sortingData.itemId,
           quantity: String(`+${sortingData.totalQuantity}`),
-          price: item.avgPrice,
+          price: item.avgPrice || 0,
           transactionDate: sortingData.sortingDate,
           reference: String(newSorting.sortingId ?? ''),
           referenceType: 'sorting',
@@ -260,7 +260,7 @@ export const editSorting = async (
         await tx.insert(storeTransactionModel).values({
           itemId: fields.itemId!,
           quantity: `+${fields.totalQuantity}`,
-          price: item.avgPrice,
+          price: item.avgPrice || 0,
           transactionDate: fields.sortingDate!,
           // reference: String(newSorting.sortingId ?? ''),
           referenceType: 'sorting',
@@ -301,7 +301,7 @@ export const deleteSortingService = async (id: number, userId: number) => {
     await tx.insert(storeTransactionModel).values({
       itemId: sortingData.itemId,
       quantity: String(`-${sortingData.totalQuantity}`),
-      price: itemData.avgPrice,
+      price: itemData.avgPrice || 0,
       transactionDate: sortingData.sortingDate,
       reference: String(sortingData.sortingId),
       referenceType: 'sorting',

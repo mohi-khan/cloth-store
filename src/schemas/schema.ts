@@ -63,7 +63,7 @@ export const userRolesModel = mysqlTable('user_roles', {
 export const itemModel = mysqlTable('item', {
   itemId: int('item_id').autoincrement().primaryKey(),
   itemName: varchar('item_name', { length: 100 }).notNull(),
-  sellPriece: double('sell_price').notNull(),
+  sellPrice: double('sell_price').notNull(),
   avgPrice: double('avg_price'),
   isBulk: boolean('is_bulk').default(false).notNull(),
   createdBy: int('created_by').notNull(),
@@ -263,6 +263,24 @@ export const storeTransactionModel = mysqlTable('store_transaction', {
     'purchase return',
     'wastage',
   ]).notNull(),
+  createdBy: int('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedBy: int('updated_by'),
+  updatedAt: timestamp('updated_at').onUpdateNow(),
+})
+
+//wastage
+export const wastageModel = mysqlTable('wastage', {
+  wastageId: int('wastage_id').autoincrement().primaryKey(),
+  itemId: int('item_id').references(() => itemModel.itemId, {
+    onDelete: 'set null',
+  }),
+  quantity: int('quantity').notNull(),
+  avgPrice: int('avg_price'),
+  sellPrice: int('sell_price').notNull(),
+  netPrice: int('net_price').notNull(),
+  wastageDate: date('wastage_date').notNull(),
+  notes: text('notes'),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
@@ -547,3 +565,5 @@ export type Transaction = typeof transactionModel.$inferSelect
 export type NewTransaction = typeof transactionModel.$inferInsert
 export type OpeningBalance = typeof openingBalanceModel.$inferSelect
 export type NewOpeningBalance = typeof openingBalanceModel.$inferInsert
+export type Wastage = typeof wastageModel.$inferInsert
+export type NewWastage = typeof wastageModel.$inferInsert

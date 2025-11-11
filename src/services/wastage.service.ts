@@ -1,74 +1,120 @@
 import { eq, sql } from 'drizzle-orm'
 import { db } from '../config/database'
-import { storeTransactionModel, NewStoreTransaction, itemModel } from '../schemas'
+import { wastageModel, NewWastage, itemModel, storeTransactionModel } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
 
 // Create
-export const createStoreTransaction = async (
-  storeTransactionData: Omit<NewStoreTransaction, 'transactionId' | 'updatedAt' | 'updatedBy'>
+export const createWastage = async (
+  wastageData: Omit<NewWastage, 'wastageId' | 'updatedAt' | 'updatedBy'>
 ) => {
   try {
-    const [newStoreTransaction] = await db.insert(storeTransactionModel).values({
-      ...storeTransactionData,
-      quantity: `-${storeTransactionData.quantity}`,
-      createdAt: new Date(),
+    const result = await db.transaction(async (tx) => {
+      // 1️⃣ Validate itemId
+      console.log("🚀 ~ createWastage ~ wastageData:", wastageData)
+      if (!wastageData.itemId) {
+        throw new Error('itemId is required')
+      }
+
+      // 2️⃣ Fetch item data
+      const [itemData] = await tx
+        .select()
+        .from(itemModel)
+        .where(eq(itemModel.itemId, wastageData.itemId))
+
+      if (!itemData) {
+        throw new Error('Item record not found')
+      }
+
+      const quantity = wastageData.quantity ?? 0
+      const avgPrice = itemData.avgPrice ?? 0
+      const sellPrice = itemData.sellPrice ?? 0
+      const netPrice = quantity * sellPrice
+
+      // 3️⃣ Insert into wastage table
+      const [newWastage] = await tx
+        .insert(wastageModel)
+        .values({
+          itemId: wastageData.itemId,
+          quantity: quantity,
+          avgPrice: avgPrice,
+          sellPrice: sellPrice,
+          netPrice: netPrice,
+          wastageDate: wastageData.wastageDate,
+          notes: wastageData.notes ?? null,
+          createdBy: wastageData.createdBy,
+          createdAt: new Date(),
+        })
+        .execute() // ✅ So you can get inserted record
+
+      // 4️⃣ Insert into store_transaction table
+      await tx.insert(storeTransactionModel).values({
+        itemId: wastageData.itemId,
+        quantity: `-${quantity}`,
+        price: avgPrice,
+        transactionDate: wastageData.wastageDate,
+        referenceType: 'wastage',
+        createdBy: wastageData.createdBy,
+        createdAt: new Date(),
+      })
+      return newWastage
     })
 
-    return newStoreTransaction
+    return result
   } catch (error) {
+    console.error('Error creating wastage:', error)
     throw error
   }
 }
-
 // Get All
-export const getAllStoreTransactions = async () => {
+export const getAllWastages = async () => {
   return await db
     .select({
-      transactionId: storeTransactionModel.transactionId,
-      itemId: storeTransactionModel.itemId,
+      wastageId: wastageModel.wastageId,
+      itemId: wastageModel.itemId,
       itemName: itemModel.itemName,
-      price: storeTransactionModel.price,
-      quantity: storeTransactionModel.quantity,
-      transactionDate: storeTransactionModel.transactionDate,
-      reference: storeTransactionModel.reference,
-      referenceType: storeTransactionModel.referenceType,
-      createdBy: storeTransactionModel.createdBy,
-      createdAt: storeTransactionModel.createdAt,
-      updatedBy: storeTransactionModel.updatedBy,
-      updatedAt: storeTransactionModel.updatedAt,
+      quantity: wastageModel.quantity,
+      wastageDate: wastageModel.wastageDate,
+      avgPrice: wastageModel.avgPrice,
+      sellPrice: wastageModel.sellPrice,
+      netPrice: wastageModel.netPrice,
+      createdBy: wastageModel.createdBy,
+      notes: wastageModel.notes,
+      createdAt: wastageModel.createdAt,
+      updatedBy: wastageModel.updatedBy,
+      updatedAt: wastageModel.updatedAt,
     })
-    .from(storeTransactionModel)
-    .innerJoin(itemModel, eq(storeTransactionModel.itemId, itemModel.itemId))
+    .from(wastageModel)
+    .innerJoin(itemModel, eq(wastageModel.itemId, itemModel.itemId))
 }
 
 // Get By Id
-export const getStoreTransactionById = async (transactionId: number) => {
-  const storeTransaction = await db
+export const getWastageById = async (wastageId: number) => {
+  const wastage = await db
     .select()
-    .from(storeTransactionModel)
-    .where(eq(storeTransactionModel.transactionId, transactionId))
+    .from(wastageModel)
+    .where(eq(wastageModel.wastageId, wastageId))
     .limit(1)
 
-  if (!storeTransaction.length) {
-    throw BadRequestError('Cloth storeTransaction not found')
+  if (!wastage.length) {
+    throw BadRequestError('Cloth wastage not found')
   }
 
-  return storeTransaction[0]
+  return wastage[0]
 }
 
 // Update
-export const editStoreTransaction = async (
-  transactionId: number,
-  storeTransactionData: Partial<NewStoreTransaction>
+export const editWastage = async (
+  wastageId: number,
+  wastageData: Partial<NewWastage>
 ) => {
-  const [updatedStoreTransaction] = await db
-    .update(storeTransactionModel)
-    .set(storeTransactionData)
-    .where(eq(storeTransactionModel.transactionId, transactionId))
+  const [updatedWastage] = await db
+    .update(wastageModel)
+    .set(wastageData)
+    .where(eq(wastageModel.wastageId, wastageId))
 
-  if (!updatedStoreTransaction) {
-    throw BadRequestError('Cloth storeTransaction not found')
+  if (!updatedWastage) {
+    throw BadRequestError('Cloth wastage not found')
   }
 
-  return updatedStoreTransaction
+  return updatedWastage
 }
