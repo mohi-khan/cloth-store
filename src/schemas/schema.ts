@@ -287,6 +287,7 @@ export const wastageModel = mysqlTable('wastage', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
+//sales transaction
 export const salesTransactionModel = mysqlTable('sales_transaction', {
   transactionId: int('transaction_id').autoincrement().primaryKey(),
   saleMasterId: int('sale_master_id').references(
@@ -307,6 +308,7 @@ export const salesTransactionModel = mysqlTable('sales_transaction', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
+//transaction
 export const transactionModel = mysqlTable('transaction', {
   transactionId: int('transaction_id').autoincrement().primaryKey(),
   transactionType: mysqlEnum('transaction_type', [
@@ -332,6 +334,7 @@ export const transactionModel = mysqlTable('transaction', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
+//opening balance
 export const openingBalanceModel = mysqlTable('opening_balance', {
   openingBalanceId: int('opening_balance_id').autoincrement().primaryKey(),
   openingAmount: double('opening_amount').notNull(),
@@ -343,6 +346,22 @@ export const openingBalanceModel = mysqlTable('opening_balance', {
     onDelete: 'set null',
   }),
   type: mysqlEnum('type', ['debit', 'credit']).notNull(),
+  createdBy: int('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedBy: int('updated_by'),
+  updatedAt: timestamp('updated_at').onUpdateNow(),
+})
+
+//stock adjustment
+export const stockAdjustmentModel = mysqlTable('stock_adjustment', {
+  adjustmentId: int('adjustment_id').autoincrement().primaryKey(),
+  prevItemId: int('prev_item_id').references(() => itemModel.itemId, {
+    onDelete: 'set null',
+  }),
+  newItemId: int('new_item_id').references(() => itemModel.itemId, {
+    onDelete: 'set null',
+  }),
+  quantity: int('quantity').notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
@@ -567,3 +586,5 @@ export type OpeningBalance = typeof openingBalanceModel.$inferSelect
 export type NewOpeningBalance = typeof openingBalanceModel.$inferInsert
 export type Wastage = typeof wastageModel.$inferInsert
 export type NewWastage = typeof wastageModel.$inferInsert
+export type StockAdjustment = typeof stockAdjustmentModel.$inferInsert
+export type NewStockAdjustment = typeof stockAdjustmentModel.$inferInsert
