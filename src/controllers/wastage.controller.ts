@@ -1,12 +1,12 @@
 import { NextFunction, Request, Response } from 'express'
 import { createInsertSchema } from 'drizzle-zod'
-import { storeTransactionModel } from '../schemas'
+import { wastageModel } from '../schemas'
 import { requirePermission } from '../services/utils/jwt.utils'
 import {
-  createStoreTransaction,
-  editStoreTransaction,
-  getAllStoreTransactions,
-  getStoreTransactionById,
+  createWastage,
+  editWastage,
+  getAllWastages,
+  getWastageById,
 } from '../services/wastage.service'
 import { z } from 'zod'
 
@@ -17,77 +17,77 @@ const dateStringToDate = z.preprocess(
 )
 
 // Schema validation
-const createStoreTransactionSchema = createInsertSchema(storeTransactionModel).omit({
-  transactionId: true,
+const createWastageSchema = createInsertSchema(wastageModel).omit({
+  wastageId: true,
   createdAt: true,
 }).extend({
-  transactionDate: dateStringToDate
+  wastageDate: dateStringToDate
 })
 
-const editStoreTransactionSchema = createStoreTransactionSchema.partial()
+const editWastageSchema = createWastageSchema.partial()
 
-export const createStoreTransactionController = async (
+export const createWastageController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_storeTransaction')
-    const storeTransactionData = createStoreTransactionSchema.parse(req.body)
-    const storeTransaction = await createStoreTransaction(storeTransactionData)
+    // requirePermission(req, 'create_wastage')
+    const wastageData = createWastageSchema.parse(req.body)
+    const wastage = await createWastage(wastageData)
 
     res.status(201).json({
       status: 'success',
-      data: storeTransaction,
+      data: wastage,
     })
   } catch (error) {
     next(error)
   }
 }
 
-export const getAllStoreTransactionsController = async (
+export const getAllWastagesController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_storeTransaction')
-    const storeTransactions = await getAllStoreTransactions()
+    // requirePermission(req, 'view_wastage')
+    const wastages = await getAllWastages()
 
-    res.status(200).json(storeTransactions)
+    res.status(200).json(wastages)
   } catch (error) {
     next(error)
   }
 }
 
-export const getStoreTransactionController = async (
+export const getWastageController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'view_storeTransaction')
+    requirePermission(req, 'view_wastage')
     const id = Number(req.params.id)
-    const storeTransaction = await getStoreTransactionById(id)
+    const wastage = await getWastageById(id)
 
-    res.status(200).json(storeTransaction)
+    res.status(200).json(wastage)
   } catch (error) {
     next(error)
   }
 }
 
-export const editStoreTransactionController = async (
+export const editWastageController = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'edit_storeTransaction')
+    requirePermission(req, 'edit_wastage')
     const id = Number(req.params.id)
-    const storeTransactionData = editStoreTransactionSchema.parse(req.body)
-    const storeTransaction = await editStoreTransaction(id, storeTransactionData)
+    const wastageData = editWastageSchema.parse(req.body)
+    const wastage = await editWastage(id, wastageData)
 
-    res.status(200).json(storeTransaction)
+    res.status(200).json(wastage)
   } catch (error) {
     next(error)
   }
