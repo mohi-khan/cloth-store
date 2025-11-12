@@ -262,6 +262,7 @@ export const storeTransactionModel = mysqlTable('store_transaction', {
     'sales return',
     'purchase return',
     'wastage',
+    'adjustment',
   ]).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

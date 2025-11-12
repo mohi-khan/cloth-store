@@ -14,6 +14,7 @@ import transactionRoutes from "./transaction.routes";
 import openingBalanceRoutes from "./openingBalance.routes";
 import reportRoutes from "./report.routes";
 import wastageRoutes from "./wastage.routes"
+import stockAdjustmentRoutes from "./stockTransaction.routes"
 
 const router=Router()
 
@@ -32,5 +33,6 @@ router.use('/transaction', transactionRoutes);
 router.use('/opening-balance', openingBalanceRoutes);
 router.use('/report', reportRoutes);
 router.use('/wastage', wastageRoutes);
+router.use('/stock-adjustment', stockAdjustmentRoutes)
 
 export default router;
