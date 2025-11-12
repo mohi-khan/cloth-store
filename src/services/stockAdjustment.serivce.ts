@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '../config/database'
 import {
   stockAdjustmentModel,
@@ -7,6 +7,7 @@ import {
   itemModel,
 } from '../schemas'
 import { BadRequestError } from './utils/errors.utils'
+import { alias } from 'drizzle-orm/mysql-core'
 
 // Create
 export const createStockAdjustment = async (
@@ -16,26 +17,84 @@ export const createStockAdjustment = async (
   >
 ) => {
   try {
-    const [newStockAdjustment] = await db.insert(stockAdjustmentModel).values({
-      ...stockAdjustmentData,
-      createdAt: new Date(),
+    const result = await db.transaction(async (tx) => {
+      // 1️⃣ Insert new stock adjustment
+      const [newStockAdjustment] = await tx
+        .insert(stockAdjustmentModel)
+        .values({
+          ...stockAdjustmentData,
+          createdAt: new Date(),
+        })
+        .execute()
+
+      // 2️⃣ Validate IDs
+      if (!stockAdjustmentData.prevItemId || !stockAdjustmentData.newItemId) {
+        throw new Error('Both prevItemId and newItemId are required')
+      }
+
+      // 3️⃣ Fetch both items
+      const [prevItem] = await tx
+        .select()
+        .from(itemModel)
+        .where(eq(itemModel.itemId, stockAdjustmentData.prevItemId))
+        .limit(1)
+
+      const [newItem] = await tx
+        .select()
+        .from(itemModel)
+        .where(eq(itemModel.itemId, stockAdjustmentData.newItemId))
+        .limit(1)
+
+      if (!prevItem) throw new Error('Previous item not found')
+      if (!newItem) throw new Error('New item not found')
+
+      const prevAvgPrice = prevItem.avgPrice ?? 0
+      const newAvgPrice = newItem.avgPrice ?? 0
+
+      // 4️⃣ Insert negative store transaction for previous item
+      await tx.insert(storeTransactionModel).values({
+        itemId: stockAdjustmentData.prevItemId,
+        quantity: `-${stockAdjustmentData.quantity}`,
+        transactionDate: new Date(),
+        referenceType: 'adjustment',
+        price: prevAvgPrice,
+        createdBy: stockAdjustmentData.createdBy,
+        createdAt: new Date(),
+      })
+
+      // 5️⃣ Insert positive store transaction for new item
+      await tx.insert(storeTransactionModel).values({
+        itemId: stockAdjustmentData.newItemId,
+        quantity: `+${stockAdjustmentData.quantity}`,
+        transactionDate: new Date(),
+        referenceType: 'adjustment',
+        price: newAvgPrice,
+        createdBy: stockAdjustmentData.createdBy,
+        createdAt: new Date(),
+      })
+
+      return newStockAdjustment
     })
 
-    return newStockAdjustment
+    return result
   } catch (error) {
+    console.error('Error creating stock adjustment:', error)
     throw error
   }
 }
 
 // Get All
+const prevItem = alias(itemModel, 'prev_item')
+const newItem = alias(itemModel, 'new_item')
+
 export const getAllStockAdjustments = async () => {
   return await db
     .select({
       adjustmentId: stockAdjustmentModel.adjustmentId,
       prevItemId: stockAdjustmentModel.prevItemId,
-      prevItemName: itemModel.itemName,
+      prevItemName: prevItem.itemName,
       newItemId: stockAdjustmentModel.newItemId,
-      newItemName: itemModel.itemName,
+      newItemName: newItem.itemName,
       quantity: stockAdjustmentModel.quantity,
       createdBy: stockAdjustmentModel.createdBy,
       createdAt: stockAdjustmentModel.createdAt,
@@ -43,8 +102,8 @@ export const getAllStockAdjustments = async () => {
       updatedAt: stockAdjustmentModel.updatedAt,
     })
     .from(stockAdjustmentModel)
-    .innerJoin(itemModel, eq(stockAdjustmentModel.newItemId, itemModel.itemId))
-    .innerJoin(itemModel, eq(stockAdjustmentModel.prevItemId, itemModel.itemId))
+    .leftJoin(prevItem, eq(stockAdjustmentModel.prevItemId, prevItem.itemId))
+    .leftJoin(newItem, eq(stockAdjustmentModel.newItemId, newItem.itemId))
 }
 
 // Get By Id
