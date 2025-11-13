@@ -21,10 +21,11 @@ export const getRemainingAmount = async () => {
     SELECT 
   c.customer_id,
   c.name AS customer_name,
+  COALESCE(MAX(t2.opening_balance),0) AS opening_balance,
   COALESCE(SUM(sm.total_amount), 0) AS total_sales,
   COALESCE(SUM(sm.discount_amount), 0) AS total_discount,
   COALESCE(SUM(IFNULL(t.total_received,0)), 0) AS total_received,
-  coalesce(SUM(sm.total_amount)-SUM(IFNULL(t.total_received,0))-SUM(sm.discount_amount),0) AS unpaid_amount
+  coalesce(IFNULL(MAX(t2.opening_balance),0)-SUM(sm.total_amount)-SUM(IFNULL(t.total_received,0))-SUM(sm.discount_amount),0) AS unpaid_amount
 FROM customer AS c
 LEFT JOIN (
   SELECT 
@@ -42,6 +43,9 @@ LEFT JOIN (
   WHERE transaction_type = 'received'
   GROUP BY customer_id
 ) AS t ON t.customer_id = c.customer_id
+LEFT JOIN (
+SELECT customer_id, IF(type='credit',-(opening_amount),opening_amount) AS opening_balance FROM opening_balance WHERE is_party = 1
+) as t2 on t2.customer_id = c.customer_id
 GROUP BY c.customer_id, c.name;
   `)
 
