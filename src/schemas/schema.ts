@@ -94,6 +94,7 @@ export const vendorModel = mysqlTable('vendor', {
   phone: varchar('phone', { length: 20 }),
   email: varchar('email', { length: 100 }),
   address: varchar('address', { length: 255 }),
+  loanGroup: boolean('loan_group').notNull().default(false),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
