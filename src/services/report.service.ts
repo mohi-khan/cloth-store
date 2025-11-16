@@ -304,3 +304,30 @@ export const getStockLedger = async (
 
   return updatedRows
 }
+
+export const getLoanReport = async (unique_name: string) => {
+  const [rows] = await db.execute(sql`
+   -- Loan received
+    SELECT 
+        l.loan_date AS date,
+        'Received' AS type,
+        l.loan_amount_receivable AS amount,
+        l.remarks
+    FROM loan l
+    WHERE unique_name = ${unique_name}
+    UNION
+    -- Loan payments (expense)
+    SELECT 
+        e.expense_date AS date,
+        'Payment' AS type,
+        e.amount AS amount,
+        e.remarks
+    FROM expense e
+    INNER JOIN account_head ON account_head.account_head_id = e.account_head_id
+    WHERE account_head.name = ${unique_name}
+    
+    ORDER BY date
+  `)
+
+  return rows
+}
