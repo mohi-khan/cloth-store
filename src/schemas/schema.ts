@@ -94,6 +94,7 @@ export const vendorModel = mysqlTable('vendor', {
   phone: varchar('phone', { length: 20 }),
   email: varchar('email', { length: 100 }),
   address: varchar('address', { length: 255 }),
+  loanGroup: boolean('loan_group').notNull().default(false),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
@@ -369,6 +370,21 @@ export const stockAdjustmentModel = mysqlTable('stock_adjustment', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
+export const loanModel = mysqlTable('loan', {
+  loanId: int('loan_id').autoincrement().primaryKey(),
+  uniqueName: varchar('unique_name', { length: 255 }).notNull().unique(),
+  vendorId: int('vendor_id').references(() => vendorModel.vendorId, {
+    onDelete: 'set null',
+  }),
+  loanDate: date('loan_date').notNull(),
+  loanAmountReceivable: int('loan_amount_receivable').notNull(),
+  remarks: text('remarks'),
+  createdBy: int('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedBy: int('updated_by'),
+  updatedAt: timestamp('updated_at').onUpdateNow(),
+});
+
 // ========================
 // Relations
 // ========================
@@ -549,6 +565,13 @@ export const transactionRelations = relations(transactionModel, ({ one }) => ({
   }),
 }))
 
+export const loanRelations = relations(loanModel, ( { one }) => ({
+  vendor: one(vendorModel, {
+    fields: [loanModel.loanId],
+    references: [vendorModel.vendorId]
+  }),
+}))
+
 export type User = typeof userModel.$inferSelect
 export type NewUser = typeof userModel.$inferInsert
 export type Role = typeof roleModel.$inferSelect
@@ -589,3 +612,5 @@ export type Wastage = typeof wastageModel.$inferInsert
 export type NewWastage = typeof wastageModel.$inferInsert
 export type StockAdjustment = typeof stockAdjustmentModel.$inferInsert
 export type NewStockAdjustment = typeof stockAdjustmentModel.$inferInsert
+export type Loan = typeof loanModel.$inferInsert
+export type NewLoan = typeof loanModel.$inferInsert
