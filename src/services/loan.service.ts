@@ -1,6 +1,7 @@
 import { eq, sql } from 'drizzle-orm'
 import { db } from '../config/database'
 import {
+  accountHeadModel,
   loanModel,
   NewLoan,
   storeTransactionModel,
@@ -29,6 +30,11 @@ export const createLoan = async (
       createdAt: new Date(),
     })
 
+    await db.insert(accountHeadModel).values({
+      name: loanData.uniqueName,
+      createdBy: loanData.createdBy,
+    })
+
     return newLoan
   } catch (error) {
     throw error
@@ -45,7 +51,6 @@ export const getAllLoans = async () => {
       uniqueName: loanModel.uniqueName,
       loanDate: loanModel.loanDate,
       loanAmountReceivable: loanModel.loanAmountReceivable,
-      loanAmountPayable: loanModel.loanAmountPayable,
       remarks: loanModel.remarks,
       createdBy: loanModel.createdBy,
       createdAt: loanModel.createdAt,

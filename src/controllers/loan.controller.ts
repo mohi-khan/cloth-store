@@ -8,11 +8,20 @@ import {
   getAllLoans,
   getLoanById,
 } from '../services/loan.service'
+import { z } from 'zod'
+
+const dateStringToDate = z.preprocess(
+  (arg) =>
+    typeof arg === 'string' || arg instanceof Date ? new Date(arg) : undefined,
+  z.date()
+)
 
 // Schema validation
 const createLoanSchema = createInsertSchema(loanModel).omit({
   loanId: true,
   createdAt: true,
+}).extend({
+    loanDate: dateStringToDate
 })
 
 const editLoanSchema = createLoanSchema.partial()

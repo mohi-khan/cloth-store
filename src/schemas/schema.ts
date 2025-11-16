@@ -378,7 +378,6 @@ export const loanModel = mysqlTable('loan', {
   }),
   loanDate: date('loan_date').notNull(),
   loanAmountReceivable: int('loan_amount_receivable').notNull(),
-  loanAmountPayable: int('loan_amount_payable').notNull(),
   remarks: text('remarks'),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
