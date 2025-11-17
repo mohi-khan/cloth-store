@@ -298,9 +298,47 @@ export const getStockLedger = async (
       reference_type: 'Closing Stock',
       quantity: lastElement.balance,
       balance: lastElement.balance,
-      reference: "0",
+      reference: '0',
     })
   }
 
   return updatedRows
 }
+
+export const getLoanReport = async (unique_name: string) => {
+  const [rows] = await db.execute(sql`
+    -- Loan received
+    SELECT 
+        CONCAT(
+            DATE_FORMAT(NOW(), '%Y%m%d%H%i%s'),
+            LPAD(FLOOR(RAND() * 1000), 3, '0')
+        ) AS id,
+        l.loan_date AS date,
+        'Received' AS type,
+        l.loan_amount_receivable AS amount,
+        l.remarks
+    FROM loan l
+    WHERE unique_name = ${unique_name}
+
+    UNION
+
+    -- Loan payments (expense)
+    SELECT 
+        CONCAT(
+            DATE_FORMAT(NOW(), '%Y%m%d%H%i%s'),
+            LPAD(FLOOR(RAND() * 1000), 3, '0')
+        ) AS id,
+        e.expense_date AS date,
+        'Payment' AS type,
+        e.amount AS amount,
+        e.remarks
+    FROM expense e
+    INNER JOIN account_head ON account_head.account_head_id = e.account_head_id
+    WHERE account_head.name = ${unique_name}
+
+    ORDER BY date
+  `)
+
+  return rows
+}
+

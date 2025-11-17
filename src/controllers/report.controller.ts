@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { getCashReport, getCustomerReport, getStockLedger } from '../services/report.service'
+import { getCashReport, getCustomerReport, getLoanReport, getStockLedger } from '../services/report.service'
 
 export const getCashReportController = async (req: Request, res: Response) => {
   try {
@@ -45,6 +45,22 @@ export const getStockLedgerController = async (req: Request, res: Response) => {
     }
 
     const ledger = await getStockLedger(itemId, startDate, endDate);
+    res.json(ledger);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+export const getLoanReportController = async (req: Request, res: Response) => {
+  try {
+    const unique_name = String(req.query.unique_name);
+
+    if (!unique_name) {
+      res.status(400).json({ message: "unique name is required" });
+    }
+
+    const ledger = await getLoanReport(unique_name);
     res.json(ledger);
   } catch (error) {
     console.error(error);
