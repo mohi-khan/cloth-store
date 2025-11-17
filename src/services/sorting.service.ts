@@ -69,7 +69,7 @@ export const createSorting = async (
         await tx.insert(storeTransactionModel).values({
           itemId: purchase.itemId,
           quantity: String(`-${sortingData.totalQuantity}`),
-          price: item.avgPrice || 0, 
+          price: item.avgPrice || 0,
           transactionDate: sortingData.sortingDate,
           reference: String(purchase.purchaseId),
           referenceType: 'purchase',
@@ -175,25 +175,14 @@ export const editSorting = async (
   if (!Array.isArray(sortingDataArray) || sortingDataArray.length === 0) {
     throw BadRequestError('No sorting data provided')
   }
-
-  // const itemData = await db
-  //   .select()
-  //   .from(itemModel)
-  //   .where(eq(itemModel.itemId, sortingDataArray[0].itemId!))
-  //   .limit(1)
-
-  // if (!itemData.length) {
-  //   throw BadRequestError('Sorting not found')
-  // }
-
   const trx = await db.transaction(async (tx) => {
     interface ProcessedRecord {
-      action: 'updated' | 'created';
-      sortingId: number;
-      [key: string]: any; // for additional fields from sorting model
+      action: 'updated' | 'created'
+      sortingId: number
+      [key: string]: any // for additional fields from sorting model
     }
-    
-    const processedRecords: ProcessedRecord[] = [];
+
+    const processedRecords: ProcessedRecord[] = []
 
     for (const sortingData of sortingDataArray) {
       const { sortingId, ...fields } = sortingData
@@ -208,10 +197,57 @@ export const editSorting = async (
 
       if (!item) {
         throw new Error(`sorting with ID ${sortingData.itemId} not found`)
-      }
+      } //return (oldRecord as any)[key] !== value
 
       if (sortingId) {
-        // --- Update existing record ---
+        // --- Fetch old sorting record first ---
+        const oldRecord = await tx.query.sortingModel.findFirst({
+          where: eq(sortingModel.sortingId, sortingId),
+        })
+
+        if (!oldRecord) {
+          throw BadRequestError(`Sorting record with ID ${sortingId} not found`)
+        }
+
+        // Detect if anything actually changed
+        const isChanged = Object.entries(fields).some(([key, value]) => {
+          // If the field exists in oldRecord, compare it
+          // Also consider 0 / null properly
+          return value !== undefined && (oldRecord as any)[key] !== value
+        })
+
+        if (!isChanged) {
+          // No changes → skip inserts & update
+          processedRecords.push({
+            ...oldRecord,
+            sortingId,
+            action: 'updated', // you can also mark as 'unchanged' if you want
+          })
+          continue // skip to next iteration of for loop
+        }
+        // --- Revert old storeTransaction effects ---
+        await tx.insert(storeTransactionModel).values({
+          itemId: oldRecord.itemId,
+          quantity: `+${oldRecord.totalQuantity}`,
+          price: item.avgPrice || 0,
+          transactionDate: oldRecord.sortingDate,
+          referenceType: 'purchase',
+          createdBy: oldRecord.createdBy,
+          createdAt: new Date(),
+        } satisfies typeof storeTransactionModel.$inferInsert)
+
+        // Insert negative entry to negate previous sorting effect
+        await tx.insert(storeTransactionModel).values({
+          itemId: fields.itemId ?? oldRecord.itemId,
+          quantity: `-${fields.totalQuantity ?? oldRecord.totalQuantity}`,
+          price: item.avgPrice || 0,
+          transactionDate: fields.sortingDate ?? oldRecord.sortingDate,
+          referenceType: 'sorting',
+          createdBy: fields.createdBy ?? oldRecord.createdBy,
+          createdAt: new Date(),
+        } satisfies typeof storeTransactionModel.$inferInsert)
+
+        // --- Update sorting record ---
         const [updatedItem] = await tx
           .update(sortingModel)
           .set({
@@ -254,15 +290,29 @@ export const editSorting = async (
           } satisfies typeof sortingModel.$inferInsert)
           .execute()
 
-        processedRecords.push({ ...newSorting, sortingId: newSorting.insertId, action: 'created' })
+        processedRecords.push({
+          ...newSorting,
+          sortingId: newSorting.insertId,
+          action: 'created',
+        })
 
-        // Insert corresponding store transaction
+        // Insert corresponding store transaction as pruchase (-quantity)
+        await tx.insert(storeTransactionModel).values({
+          itemId: fields.itemId!,
+          quantity: `-${fields.totalQuantity}`,
+          price: item.avgPrice || 0,
+          transactionDate: fields.sortingDate!,
+          referenceType: 'purchase',
+          createdBy: fields.createdBy!,
+          createdAt: new Date(),
+        } satisfies typeof storeTransactionModel.$inferInsert)
+
+        // Insert corresponding store transaction as sorting (+quantity)
         await tx.insert(storeTransactionModel).values({
           itemId: fields.itemId!,
           quantity: `+${fields.totalQuantity}`,
           price: item.avgPrice || 0,
           transactionDate: fields.sortingDate!,
-          // reference: String(newSorting.sortingId ?? ''),
           referenceType: 'sorting',
           createdBy: fields.createdBy!,
           createdAt: new Date(),
