@@ -188,11 +188,17 @@ export const getPurchaseSummary = async () => {
     .groupBy(sql`DATE_FORMAT(${purchaseModel.purchaseDate}, '%Y-%m')`)
     .orderBy(sql`DATE_FORMAT(${purchaseModel.purchaseDate}, '%Y-%m')`);
 
-  // Random integer ID
-  const dataWithId = result.map((item) => ({
-    id: Math.floor(Math.random() * 1_000_000_000_0000), // 13-digit unique int
-    ...item,
-  }));
+  const dataWithIdAndFormattedMonth = result.map((item) => {
+    const [year, month] = item.yearMonth.split("-");
+    const date = new Date(Number(year), Number(month) - 1); // JS months are 0-based
+    const formattedMonth = date.toLocaleString("en-US", { month: "long", year: "numeric" });
 
-  return dataWithId;
+    return {
+      id: Math.floor(Math.random() * 1_000_000_000_0000),
+      month: formattedMonth, // e.g., "October 2025"
+      totalAmount: item.totalAmount,
+    };
+  });
+
+  return dataWithIdAndFormattedMonth;
 };
