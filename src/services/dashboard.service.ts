@@ -1,5 +1,6 @@
 import { db } from '../config/database'
-import { sql } from 'drizzle-orm'
+import { gte, sql } from 'drizzle-orm'
+import { purchaseModel } from '../schemas'
 
 export const getItemSummary = async () => {
   const [rows] = await db.execute(sql`
@@ -79,20 +80,66 @@ transaction WHERE transaction_type='payment' AND is_cash=1) AS t1 ;
 }
 
 export const getProfitSummary = async () => {
+  // const [rows] = await db.execute(sql`
+  //   SELECT
+  //     ROW_NUMBER() OVER (ORDER BY MIN(sales_master.sale_date)) AS id,
+  //     DATE_FORMAT(sales_master.sale_date, '%M %Y') AS month,
+  //     COUNT(DISTINCT sales_master.sale_master_id) AS number_of_sales,
+  //     SUM(sales_details.amount) AS total_sales_amount,
+  //     SUM((sales_details.unit_price - sales_details.avg_price) * sales_details.quantity)
+  //       - SUM(sales_master.discount_amount) AS net_profit
+  //   FROM sales_details
+  //   INNER JOIN item ON item.item_id = sales_details.item_id
+  //   INNER JOIN sales_master ON sales_master.sale_master_id = sales_details.sale_master_id
+  //   WHERE sales_master.sale_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+  //   GROUP BY DATE_FORMAT(sales_master.sale_date, '%M %Y')
+  //   ORDER BY MIN(sales_master.sale_date);
+  // `)
   const [rows] = await db.execute(sql`
+    SELECT 
+    ROW_NUMBER() OVER (ORDER BY table1.date) AS id,
+    table1.month,
+    SUM(table1.number_of_sales) AS number_of_sales,
+    SUM(table1.total_sales_amount) AS total_sales_amount,
+    SUM(table1.gross_profit) AS gross_profit,
+    SUM(table1.total_expense) AS total_expense,
+    SUM(table1.gross_profit)-SUM(table1.total_expense) AS net_profit
+FROM
+(
+    -- SALES DATA
     SELECT
-      ROW_NUMBER() OVER (ORDER BY MIN(sales_master.sale_date)) AS id,
-      DATE_FORMAT(sales_master.sale_date, '%M %Y') AS month,
-      COUNT(DISTINCT sales_master.sale_master_id) AS number_of_sales,
-      SUM(sales_details.amount) AS total_sales_amount,
-      SUM((sales_details.unit_price - sales_details.avg_price) * sales_details.quantity)
-        - SUM(sales_master.discount_amount) AS net_profit
+        DATE_FORMAT(MIN(sales_master.sale_date), '%Y-%m-01') AS date,
+        DATE_FORMAT(MIN(sales_master.sale_date), '%M %Y') AS month,
+        COUNT(DISTINCT sales_master.sale_master_id) AS number_of_sales,
+        SUM(sales_details.amount) AS total_sales_amount,
+        SUM((sales_details.unit_price - sales_details.avg_price) * sales_details.quantity)
+          - SUM(sales_master.discount_amount) AS gross_profit,
+        0 AS total_expense
     FROM sales_details
-    INNER JOIN item ON item.item_id = sales_details.item_id
-    INNER JOIN sales_master ON sales_master.sale_master_id = sales_details.sale_master_id
-    WHERE sales_master.sale_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-    GROUP BY DATE_FORMAT(sales_master.sale_date, '%M %Y')
-    ORDER BY MIN(sales_master.sale_date);
+    INNER JOIN item 
+        ON item.item_id = sales_details.item_id
+    INNER JOIN sales_master 
+        ON sales_master.sale_master_id = sales_details.sale_master_id
+    WHERE sales_master.sale_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+    GROUP BY DATE_FORMAT(sales_master.sale_date, '%Y-%m')
+
+    UNION ALL
+
+    -- EXPENSE DATA
+    SELECT
+        DATE_FORMAT(MIN(expense.expense_date), '%Y-%m-01') AS date,
+        DATE_FORMAT(MIN(expense.expense_date), '%M %Y') AS month,
+        0 AS number_of_sales,
+        0 AS total_sales_amount,
+        0 AS gross_profit,
+        SUM(expense.amount) AS total_expense
+    FROM expense
+    WHERE expense.expense_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+    GROUP BY DATE_FORMAT(expense.expense_date, '%Y-%m')
+) AS table1
+GROUP BY table1.month, table1.date
+ORDER BY table1.date;
+
   `)
   return rows
 }
@@ -126,3 +173,32 @@ export const getBankBalanceSummary = async () => {
   `)
   return rows
 }
+
+export const getPurchaseSummary = async () => {
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+  const result = await db
+    .select({
+      yearMonth: sql<string>`DATE_FORMAT(${purchaseModel.purchaseDate}, '%Y-%m')`,
+      totalAmount: sql<number>`SUM(${purchaseModel.totalAmount})`,
+    })
+    .from(purchaseModel)
+    .where(gte(purchaseModel.purchaseDate, sixMonthsAgo))
+    .groupBy(sql`DATE_FORMAT(${purchaseModel.purchaseDate}, '%Y-%m')`)
+    .orderBy(sql`DATE_FORMAT(${purchaseModel.purchaseDate}, '%Y-%m')`);
+
+  const dataWithIdAndFormattedMonth = result.map((item) => {
+    const [year, month] = item.yearMonth.split("-");
+    const date = new Date(Number(year), Number(month) - 1); // JS months are 0-based
+    const formattedMonth = date.toLocaleString("en-US", { month: "long", year: "numeric" });
+
+    return {
+      id: Math.floor(Math.random() * 1_000_000_000_0000),
+      month: formattedMonth, // e.g., "October 2025"
+      totalAmount: item.totalAmount,
+    };
+  });
+
+  return dataWithIdAndFormattedMonth;
+};

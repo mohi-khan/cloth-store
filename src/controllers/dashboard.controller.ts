@@ -4,6 +4,7 @@ import {
   getCashInHand,
   getItemSummary,
   getProfitSummary,
+  getPurchaseSummary,
   getRemainingAmount,
 } from '../services/dashboard.service'
 import { getCashOpeningBalance } from '../services/report.service'
@@ -84,5 +85,23 @@ export const getBankBalanceSummaryController = async (
   } catch (error) {
     console.error('Error fetching bank account balance summary:', error)
     res.status(500).json({ success: false, message: 'Internal Server Error' })
+  }
+}
+
+export const getPurchaseSummaryController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const data = await getPurchaseSummary()
+
+    res.status(200).json(data)
+  } catch (error) {
+    console.error('Error fetching purchase summary:', error)
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch purchase summary.',
+    })
   }
 }
