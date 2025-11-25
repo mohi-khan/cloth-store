@@ -138,6 +138,8 @@ export const getAllSales = async () => {
       discountAmount: salesMasterModel.discountAmount,
       createdBy: salesMasterModel.createdBy,
       customerName: customerModel.name,
+      address: customerModel.address,
+      phone: customerModel.phone,
     })
     .from(salesMasterModel)
     .innerJoin(
@@ -159,12 +161,17 @@ export const getAllSales = async () => {
       saleDetailsId: salesDetailsModel.saleDetailsId,
       saleMasterId: salesDetailsModel.saleMasterId,
       itemId: salesDetailsModel.itemId,
+      itemName: itemModel.itemName,
       quantity: salesDetailsModel.quantity,
       unitPrice: salesDetailsModel.unitPrice,
       amount: salesDetailsModel.amount,
       createdBy: salesDetailsModel.createdBy,
     })
     .from(salesDetailsModel)
+    .leftJoin(
+      itemModel,
+      eq(salesDetailsModel.itemId, itemModel.itemId)
+    )
     .where(inArray(salesDetailsModel.saleMasterId, saleIds))
 
   const grouped = masters.map((m) => ({
