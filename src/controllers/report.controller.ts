@@ -1,8 +1,10 @@
 import { Request, Response } from 'express'
 import { getCashReport, getCustomerReport, getLoanReport, getStockLedger } from '../services/report.service'
+import { requirePermission } from '../services/utils/jwt.utils';
 
 export const getCashReportController = async (req: Request, res: Response) => {
   try {
+    requirePermission(req, 'view_report')
     const { startDate, endDate } = req.query;
 
     if (!startDate || !endDate) {
@@ -19,6 +21,7 @@ export const getCashReportController = async (req: Request, res: Response) => {
 
 export const getPartyReportController = async (req: Request, res: Response) => {
   try {
+    requirePermission(req, 'view_report')
     const { startDate, endDate,partyId } = req.query;
 
     if (!startDate || !endDate) {
@@ -36,6 +39,7 @@ const parsedPartyId = partyId ? Number(partyId) : 0;
 
 export const getStockLedgerController = async (req: Request, res: Response) => {
   try {
+    requirePermission(req, 'view_report')
     const itemId = Number(req.query.itemId);
     const startDate = req.query.startDate as string;
     const endDate = req.query.endDate as string;
@@ -54,6 +58,7 @@ export const getStockLedgerController = async (req: Request, res: Response) => {
 
 export const getLoanReportController = async (req: Request, res: Response) => {
   try {
+    requirePermission(req, 'view_report')
     const unique_name = String(req.query.unique_name);
 
     if (!unique_name) {

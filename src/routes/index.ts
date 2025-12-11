@@ -1,40 +1,42 @@
-import { Router } from "express";
-import authRoutes from "./auth.routes";
-import itemRoutes from "./item.routes"
-import customerRoutes from "./customer.routes"
-import vendorRoutes from "./vendor.routes"
-import bankAccountRoutes from "./bankAccount.routes"
-import expenseRoutes from "./expense.routes"
-import salesRoutes from "./sales.routes"
-import purchaseRoutes from "./purchase.routes"
-import sortingRoutes from "./sorting.routes"
-import accountHeadRoutes from "./accountHead.routes"
-import dashboardRoutes from "./dashboard.routes"
-import transactionRoutes from "./transaction.routes";
-import openingBalanceRoutes from "./openingBalance.routes";
-import reportRoutes from "./report.routes";
-import wastageRoutes from "./wastage.routes"
-import stockAdjustmentRoutes from "./stockTransaction.routes"
-import loanRoutes from "./loan.routes"
+import { Router } from 'express'
+import authRoutes from './auth.routes'
+import itemRoutes from './item.routes'
+import customerRoutes from './customer.routes'
+import vendorRoutes from './vendor.routes'
+import bankAccountRoutes from './bankAccount.routes'
+import expenseRoutes from './expense.routes'
+import salesRoutes from './sales.routes'
+import salesReturnRoutes from './salesReturn.routes'
+import purchaseRoutes from './purchase.routes'
+import sortingRoutes from './sorting.routes'
+import accountHeadRoutes from './accountHead.routes'
+import dashboardRoutes from './dashboard.routes'
+import transactionRoutes from './transaction.routes'
+import openingBalanceRoutes from './openingBalance.routes'
+import reportRoutes from './report.routes'
+import wastageRoutes from './wastage.routes'
+import stockAdjustmentRoutes from './stockTransaction.routes'
+import loanRoutes from './loan.routes'
 
-const router=Router()
+const router = Router()
 
-router.use('/auth',authRoutes)
-router.use('/item',itemRoutes)
-router.use('/customer',customerRoutes)
-router.use('/vendor',vendorRoutes)
-router.use('/bank-account',bankAccountRoutes)
+router.use('/auth', authRoutes)
+router.use('/item', itemRoutes)
+router.use('/customer', customerRoutes)
+router.use('/vendor', vendorRoutes)
+router.use('/bank-account', bankAccountRoutes)
 router.use('/expense', expenseRoutes)
 router.use('/sales', salesRoutes)
+router.use('/sales-return', salesReturnRoutes)
 router.use('/purchase', purchaseRoutes)
 router.use('/sorting', sortingRoutes)
 router.use('/account-head', accountHeadRoutes)
 router.use('/dashboard', dashboardRoutes)
-router.use('/transaction', transactionRoutes);
-router.use('/opening-balance', openingBalanceRoutes);
-router.use('/report', reportRoutes);
-router.use('/wastage', wastageRoutes);
+router.use('/transaction', transactionRoutes)
+router.use('/opening-balance', openingBalanceRoutes)
+router.use('/report', reportRoutes)
+router.use('/wastage', wastageRoutes)
 router.use('/stock-adjustment', stockAdjustmentRoutes)
 router.use('/loan', loanRoutes)
 
-export default router;
+export default router
