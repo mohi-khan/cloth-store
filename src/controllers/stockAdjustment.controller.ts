@@ -23,7 +23,7 @@ export const createStockAdjustmentController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_stockAdjustment')
+    requirePermission(req, 'create_stock_adjustment')
     const stockAdjustmentData = createStockAdjustmentSchema.parse(req.body)
     const stockAdjustment = await createStockAdjustment(stockAdjustmentData)
 
@@ -42,7 +42,7 @@ export const getAllStockAdjustmentsController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_stockAdjustment')
+    requirePermission(req, 'view_stock_adjustment')
     const stockAdjustments = await getAllStockAdjustments()
 
     res.status(200).json(stockAdjustments)
@@ -57,7 +57,7 @@ export const getStockAdjustmentController = async (
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'view_stockAdjustment')
+    requirePermission(req, 'view_stock_adjustment')
     const id = Number(req.params.id)
     const stockAdjustment = await getStockAdjustmentById(id)
 
@@ -73,7 +73,7 @@ export const editStockAdjustmentController = async (
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'edit_stockAdjustment')
+    requirePermission(req, 'edit_stock_adjustment')
     const id = Number(req.params.id)
     const stockAdjustmentData = editStockAdjustmentSchema.parse(req.body)
     const stockAdjustment = await editStockAdjustment(id, stockAdjustmentData)

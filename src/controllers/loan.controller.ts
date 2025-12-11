@@ -32,7 +32,7 @@ export const createLoanController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_loan')
+    requirePermission(req, 'create_loan')
     const loanData = createLoanSchema.parse(req.body)
     const loan = await createLoan(loanData)
 
@@ -51,7 +51,7 @@ export const getAllLoansController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_loan')
+    requirePermission(req, 'view_loan')
     const loans = await getAllLoans()
 
     res.status(200).json(loans)

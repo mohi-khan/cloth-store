@@ -32,7 +32,7 @@ export const createWastageController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_wastage')
+    requirePermission(req, 'create_wastage')
     const wastageData = createWastageSchema.parse(req.body)
     const wastage = await createWastage(wastageData)
 
@@ -51,7 +51,7 @@ export const getAllWastagesController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_wastage')
+    requirePermission(req, 'view_wastage')
     const wastages = await getAllWastages()
 
     res.status(200).json(wastages)
