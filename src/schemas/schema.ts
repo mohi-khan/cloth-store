@@ -156,6 +156,18 @@ export const salesDetailsModel = mysqlTable('sales_details', {
   updatedAt: timestamp('updated_at').onUpdateNow(),
 })
 
+export const salesReturnModel = mysqlTable('sales_return', {
+  saleReturnId: int('sale_return_id').autoincrement().primaryKey(),
+  saleDetailsId: int('sale_details_id')
+    .notNull()
+    .references(() => salesDetailsModel.saleDetailsId, { onDelete: 'cascade' }),
+  returnQuantity: int('return_quantity').notNull(),
+  createdBy: int('created_by').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedBy: int('updated_by'),
+  updatedAt: timestamp('updated_at').onUpdateNow(),
+})
+
 // Purchases (Master)
 export const purchaseModel = mysqlTable('purchase', {
   purchaseId: int('purchase_id').autoincrement().primaryKey(),
@@ -303,7 +315,11 @@ export const salesTransactionModel = mysqlTable('sales_transaction', {
   }),
   amount: varchar('amount', { length: 100 }).notNull(),
   transactionDate: date('transaction_date').notNull(),
-  referenceType: mysqlEnum('reference_type', ['sales', 'opening balance', 'transaction']).notNull(),
+  referenceType: mysqlEnum('reference_type', [
+    'sales',
+    'opening balance',
+    'transaction',
+  ]).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
@@ -344,9 +360,12 @@ export const openingBalanceModel = mysqlTable('opening_balance', {
   customerId: int('customer_id').references(() => customerModel.customerId, {
     onDelete: 'set null',
   }),
-  bankAccountId: int('bank_account_id').references(() => bankAccountModel.bankAccountId, {
-    onDelete: 'set null',
-  }),
+  bankAccountId: int('bank_account_id').references(
+    () => bankAccountModel.bankAccountId,
+    {
+      onDelete: 'set null',
+    }
+  ),
   type: mysqlEnum('type', ['debit', 'credit']).notNull(),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -383,7 +402,7 @@ export const loanModel = mysqlTable('loan', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedBy: int('updated_by'),
   updatedAt: timestamp('updated_at').onUpdateNow(),
-});
+})
 
 // ========================
 // Relations
@@ -565,10 +584,17 @@ export const transactionRelations = relations(transactionModel, ({ one }) => ({
   }),
 }))
 
-export const loanRelations = relations(loanModel, ( { one }) => ({
+export const loanRelations = relations(loanModel, ({ one }) => ({
   vendor: one(vendorModel, {
     fields: [loanModel.loanId],
-    references: [vendorModel.vendorId]
+    references: [vendorModel.vendorId],
+  }),
+}))
+
+export const salesReturnRelations = relations(salesReturnModel, ({ one }) => ({
+  salesDetails: one(salesDetailsModel, {
+    fields: [salesReturnModel.saleDetailsId],
+    references: [salesDetailsModel.saleDetailsId],
   }),
 }))
 
@@ -591,6 +617,8 @@ export type NewBankAccount = typeof bankAccountModel.$inferInsert
 export type Sale = typeof salesMasterModel.$inferSelect
 export type NewSale = typeof salesMasterModel.$inferInsert
 export type SaleItem = typeof salesDetailsModel.$inferSelect
+export type SalesReturn = typeof salesReturnModel.$inferInsert
+export type NewSalesReturn = typeof salesReturnModel.$inferInsert
 export type NewSaleItem = typeof salesDetailsModel.$inferInsert
 export type Purchase = typeof purchaseModel.$inferSelect
 export type NewPurchase = typeof purchaseModel.$inferInsert

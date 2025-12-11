@@ -184,6 +184,50 @@ export const getAllSales = async () => {
   return grouped
 }
 
+export const getSalesDetailsBySalesMasterId = async (saleMasterId: number) => {
+  const details = await db
+    .select({
+      saleDetailsId: salesDetailsModel.saleDetailsId,
+      saleMasterId: salesDetailsModel.saleMasterId,
+      itemId: salesDetailsModel.itemId,
+      quantity: salesDetailsModel.quantity,
+      unitPrice: salesDetailsModel.unitPrice,
+      amount: salesDetailsModel.amount,
+      createdBy: salesDetailsModel.createdBy,
+
+      // Optional: include item info
+      itemName: itemModel.itemName,
+    })
+    .from(salesDetailsModel)
+    .leftJoin(itemModel, eq(salesDetailsModel.itemId, itemModel.itemId))
+    .where(eq(salesDetailsModel.saleMasterId, saleMasterId))
+
+  if (!details.length) throw BadRequestError("Sale details not found")
+
+  return details
+}
+
+export const getAllSalesMaster = async () => {
+  const masters = await db
+    .select({
+      saleMasterId: salesMasterModel.saleMasterId,
+      customerId: salesMasterModel.customerId,
+      customerName: customerModel.name,
+      paymentType: salesMasterModel.paymentType,
+      bankAccountId: salesMasterModel.bankAccountId,
+      saleDate: salesMasterModel.saleDate,
+      totalAmount: salesMasterModel.totalAmount,
+      totalQuantity: salesMasterModel.totalQuantity,
+      discountAmount: salesMasterModel.discountAmount,
+      notes: salesMasterModel.notes,
+      createdBy: salesMasterModel.createdBy,
+    })
+    .from(salesMasterModel)
+    .leftJoin(customerModel, eq(salesMasterModel.customerId, customerModel.customerId))
+
+  return masters
+}
+
 // Update Sale (Master + Details)
 export const editSale = async (
   saleMasterId: number,

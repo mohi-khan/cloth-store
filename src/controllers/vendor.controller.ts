@@ -23,7 +23,7 @@ export const createVendorController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_vendor')
+    requirePermission(req, 'create_vendor')
     const vendorData = createVendorSchema.parse(req.body)
     const item = await createVendor(vendorData)
 
@@ -42,7 +42,7 @@ export const getAllVendorsController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_vendor')
+    requirePermission(req, 'view_vendor')
     const items = await getAllVendors()
 
     res.status(200).json(items)
@@ -73,7 +73,7 @@ export const editVendorController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'edit_vendor')
+    requirePermission(req, 'edit_vendor')
     const id = Number(req.params.id)
     const vendorData = editVendorSchema.parse(req.body)
     const item = await editVendor(id, vendorData)

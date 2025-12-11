@@ -23,7 +23,7 @@ export const createOpeningBalanceController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_openingBalance')
+    requirePermission(req, 'create_opening_balance')
     const openingBalanceData = createOpeningBalanceSchema.parse(req.body)
     const item = await createOpeningBalance(openingBalanceData)
 
@@ -42,7 +42,7 @@ export const getAllOpeningBalancesController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_openingBalance')
+    requirePermission(req, 'create_opening_balance')
     const items = await getAllOpeningBalances()
 
     res.status(200).json(items)
@@ -57,7 +57,7 @@ export const getOpeningBalanceController = async (
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'view_openingBalance')
+    requirePermission(req, 'create_opening_balance')
     const id = Number(req.params.id)
     const item = await getOpeningBalanceById(id)
 
@@ -73,7 +73,7 @@ export const editOpeningBalanceController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'edit_openingBalance')
+    requirePermission(req, 'create_opening_balance')
     const id = Number(req.params.id)
     const openingBalanceData = editOpeningBalanceSchema.parse(req.body)
     const item = await editOpeningBalance(id, openingBalanceData)
