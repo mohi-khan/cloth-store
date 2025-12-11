@@ -31,7 +31,7 @@ export const createExpenseController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_expense')
+    requirePermission(req, 'create_expense')
     const expenseData = createExpenseSchema.parse(req.body)
     const item = await createExpense(expenseData)
 
@@ -50,7 +50,7 @@ export const getAllExpensesController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_expense')
+    requirePermission(req, 'view_expense')
     const items = await getAllExpenses()
 
     res.status(200).json(items)

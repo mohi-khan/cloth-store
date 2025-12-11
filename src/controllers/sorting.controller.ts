@@ -36,7 +36,7 @@ export const createSortingController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_sorting')
+    requirePermission(req, 'create_sorting')
 
     const purchaseId = Number(req.params.purchaseId)
     if (isNaN(purchaseId)) {
@@ -63,7 +63,7 @@ export const getAllSortingsController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_sorting')
+    requirePermission(req, 'view_sorting')
     const items = await getAllSortings()
 
     res.status(200).json(items)
@@ -94,6 +94,7 @@ export const editSortingController = async (
   next: NextFunction
 ) => {
   try {
+    requirePermission(req, 'edit_sorting')
     const sortingDataArray = req.body;
 
     if (!Array.isArray(sortingDataArray)) {
