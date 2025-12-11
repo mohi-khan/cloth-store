@@ -23,7 +23,7 @@ export const createCustomerController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_customer')
+    requirePermission(req, 'create_customer')
     const customerData = createCustomerSchema.parse(req.body)
     const item = await createCustomer(customerData)
 
@@ -42,7 +42,7 @@ export const getAllCustomersController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_customer')
+    requirePermission(req, 'view_customer')
     const items = await getAllCustomers()
 
     res.status(200).json(items)
@@ -57,7 +57,7 @@ export const getCustomerController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_customer')
+    requirePermission(req, 'view_customer')
     const id = Number(req.params.id)
     const item = await getCustomerById(id)
 
@@ -73,7 +73,7 @@ export const editCustomerController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'edit_customer')
+    requirePermission(req, 'edit_customer')
     const id = Number(req.params.id)
     const customerData = editCustomerSchema.parse(req.body)
     const item = await editCustomer(id, customerData)
