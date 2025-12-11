@@ -6,7 +6,9 @@ import {
   deleteSale,
   editSale,
   getAllSales,
+  getAllSalesMaster,
   getSaleById,
+  getSalesDetailsBySalesMasterId,
 } from '../services/sales.service'
 import { createInsertSchema } from 'drizzle-zod'
 import { salesDetailsModel, salesMasterModel } from '../schemas'
@@ -89,6 +91,34 @@ export const getSaleController = async (
     const saleMasterId = Number(req.params.id)
     const result = await getSaleById(saleMasterId)
     res.status(200).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const getSalesDetailsBySalesMasterIdController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = Number(req.params.id)
+    const details = await getSalesDetailsBySalesMasterId(id)
+
+    res.status(200).json(details)
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const getAllSalesMasterController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const data = await getAllSalesMaster()
+    res.status(200).json(data)
   } catch (error) {
     next(error)
   }
