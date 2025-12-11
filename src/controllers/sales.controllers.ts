@@ -6,7 +6,9 @@ import {
   deleteSale,
   editSale,
   getAllSales,
+  getAllSalesMaster,
   getSaleById,
+  getSalesDetailsBySalesMasterId,
 } from '../services/sales.service'
 import { createInsertSchema } from 'drizzle-zod'
 import { salesDetailsModel, salesMasterModel } from '../schemas'
@@ -52,7 +54,7 @@ export const createSaleController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_sale')
+    requirePermission(req, 'create_sales')
     const salesData = createSaleSchema.parse(req.body)
     const result = await createSale(salesData)
 
@@ -71,7 +73,7 @@ export const getAllSalesController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_sale')
+    requirePermission(req, 'view_sales')
     const result = await getAllSales()
     res.status(200).json(result)
   } catch (error) {
@@ -85,10 +87,40 @@ export const getSaleController = async (
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'view_sale')
+    requirePermission(req, 'view_sales')
     const saleMasterId = Number(req.params.id)
     const result = await getSaleById(saleMasterId)
     res.status(200).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const getSalesDetailsBySalesMasterIdController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    requirePermission(req, 'view_sales')
+    const id = Number(req.params.id)
+    const details = await getSalesDetailsBySalesMasterId(id)
+
+    res.status(200).json(details)
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const getAllSalesMasterController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    requirePermission(req, 'view_sales')
+    const data = await getAllSalesMaster()
+    res.status(200).json(data)
   } catch (error) {
     next(error)
   }
@@ -100,7 +132,7 @@ export const editSaleController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'edit_sale')
+    requirePermission(req, 'edit_sales')
 
     const { salesMaster, saleDetails } = req.body
 
@@ -145,6 +177,7 @@ export const editSaleController = async (
 
 export const deleteSaleController = async (req: Request, res: Response) => {
   try {
+    requirePermission(req, 'view_sales')
     const saleMasterId = Number(req.params.saleMasterId)
     const saleDetailsId = Number(req.params.saleDetailsId)
     const userId = Number(req.params.userId) // Usually comes from auth middleware

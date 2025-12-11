@@ -23,7 +23,7 @@ export const createAccountHeadController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_account_head')
+    requirePermission(req, 'create_account_head')
     const accountHeadData = createAccountHeadSchema.parse(req.body)
     const accountHead = await createAccountHead(accountHeadData)
 
@@ -42,7 +42,7 @@ export const getAllAccountHeadsController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_account_head')
+    requirePermission(req, 'view_account_head')
     const accountHeads = await getAllAccountHeads()
 
     res.status(200).json(accountHeads)
