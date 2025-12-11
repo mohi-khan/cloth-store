@@ -37,7 +37,7 @@ export const createTransactionController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_transaction')
+    requirePermission(req, 'create_transaction')
     const transactionData = createTransactionSchema.parse(req.body)
     const item = await createTransaction(transactionData)
 
@@ -56,7 +56,7 @@ export const getAllTransactionsController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_transaction')
+    requirePermission(req, 'view_transaction')
     const items = await getAllTransactions()
 
     res.status(200).json(items)
