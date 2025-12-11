@@ -23,7 +23,7 @@ export const createSalesReturnController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_bank_account')
+    requirePermission(req, 'create_sales_return')
     const salesReturnData = createSalesReturnSchema.parse(req.body)
     const item = await createSalesReturn(salesReturnData)
 
@@ -42,7 +42,7 @@ export const getAllSalesReturnsController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_bank_account')
+    requirePermission(req, 'view_sales_return')
     const items = await getAllSalesReturns()
 
     res.status(200).json(items)
@@ -57,7 +57,7 @@ export const getSalesReturnController = async (
   next: NextFunction
 ) => {
   try {
-    requirePermission(req, 'view_bank_account')
+    requirePermission(req, 'view_sales_return')
     const id = Number(req.params.id)
     const item = await getSalesReturnById(id)
 
@@ -73,7 +73,7 @@ export const editSalesReturnController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'edit_bank_account')
+    requirePermission(req, 'edit_sales_return')
     const id = Number(req.params.id)
     const salesReturnData = editSalesReturnSchema.parse(req.body)
     const item = await editSalesReturn(id, salesReturnData)

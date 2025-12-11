@@ -8,8 +8,10 @@ import {
   getRemainingAmount,
 } from '../services/dashboard.service'
 import { getCashOpeningBalance } from '../services/report.service'
+import { requirePermission } from '../services/utils/jwt.utils'
 
 export const getItemSummaryController = async (req: Request, res: Response) => {
+  requirePermission(req, 'view_dashboard')
   try {
     const data = await getItemSummary()
     res.status(200).json(data)
@@ -24,6 +26,7 @@ export const getRemainingAmountController = async (
   res: Response
 ) => {
   try {
+    requirePermission(req, 'view_dashboard')
     const data = await getRemainingAmount()
     res.status(200).json(data)
   } catch (error) {
@@ -32,18 +35,9 @@ export const getRemainingAmountController = async (
   }
 }
 
-// export const getCashInHandController = async (req: Request, res: Response) => {
-//   try {
-//     const data = await getCashInHand()
-//     res.status(200).json(data)
-//   } catch (error) {
-//     console.error('Error fetching item summary:', error)
-//     res.status(500).json({ success: false, message: 'Internal Server Error' })
-//   }
-// }
-
 export const getCashInHandController = async (req: Request, res: Response) => {
   try {
+    requirePermission(req, 'view_dashboard')
     // Use today's date
     const today = new Date().toISOString().split('T')[0] // "YYYY-MM-DD"
 
@@ -67,6 +61,7 @@ export const getProfitSummaryController = async (
   res: Response
 ) => {
   try {
+    requirePermission(req, 'view_dashboard')
     const data = await getProfitSummary()
     res.status(200).json(data)
   } catch (error) {
@@ -80,6 +75,7 @@ export const getBankBalanceSummaryController = async (
   res: Response
 ) => {
   try {
+    requirePermission(req, 'view_dashboard')
     const data = await getBankBalanceSummary()
     res.status(200).json(data)
   } catch (error) {
@@ -93,6 +89,7 @@ export const getPurchaseSummaryController = async (
   res: Response
 ) => {
   try {
+    requirePermission(req, 'view_dashboard')
     const data = await getPurchaseSummary()
 
     res.status(200).json(data)

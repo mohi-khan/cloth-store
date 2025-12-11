@@ -24,7 +24,7 @@ export const createItemController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_item')
+    requirePermission(req, 'create_item')
     const itemData = createItemSchema.parse(req.body)
     const item = await createItem(itemData)
 
@@ -43,7 +43,7 @@ export const getAllItemsController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_item')
+    requirePermission(req, 'view_item')
     const items = await getAllItems()
 
     res.status(200).json(items)
@@ -74,7 +74,7 @@ export const editItemController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'edit_item')
+    requirePermission(req, 'edit_item')
     const id = Number(req.params.id)
     const itemData = editItemSchema.parse(req.body)
     const item = await editItem(id, itemData)

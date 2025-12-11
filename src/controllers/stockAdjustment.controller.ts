@@ -23,7 +23,7 @@ export const createStockAdjustmentController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_stockAdjustment')
+    requirePermission(req, 'create_stockAdjustment')
     const stockAdjustmentData = createStockAdjustmentSchema.parse(req.body)
     const stockAdjustment = await createStockAdjustment(stockAdjustmentData)
 
@@ -42,7 +42,7 @@ export const getAllStockAdjustmentsController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_stockAdjustment')
+    requirePermission(req, 'view_stockAdjustment')
     const stockAdjustments = await getAllStockAdjustments()
 
     res.status(200).json(stockAdjustments)

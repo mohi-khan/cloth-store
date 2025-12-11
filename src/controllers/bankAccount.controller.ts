@@ -23,7 +23,7 @@ export const createBankAccountController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'create_bank_account')
+    requirePermission(req, 'create_bank_account')
     const bankAccountData = createBankAccountSchema.parse(req.body)
     const item = await createBankAccount(bankAccountData)
 
@@ -42,7 +42,7 @@ export const getAllBankAccountsController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'view_bank_account')
+    requirePermission(req, 'view_bank_account')
     const items = await getAllBankAccounts()
 
     res.status(200).json(items)
@@ -73,7 +73,7 @@ export const editBankAccountController = async (
   next: NextFunction
 ) => {
   try {
-    // requirePermission(req, 'edit_bank_account')
+    requirePermission(req, 'edit_bank_account')
     const id = Number(req.params.id)
     const bankAccountData = editBankAccountSchema.parse(req.body)
     const item = await editBankAccount(id, bankAccountData)
